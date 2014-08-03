@@ -1,7 +1,7 @@
-#ifndef _PAM_OPENSSH_X509_INFO
-#define _PAM_OPENSSH_X509_INFO
+#ifndef _PAM_OPENSSH_X509
+#define _PAM_OPENSSH_X509
 
-struct pam_ssh_x509_info {
+struct pam_openssh_x509_info {
     /* certificate information */
     char has_cert;
     char *subject;
@@ -20,5 +20,7 @@ struct pam_ssh_x509_info {
     char directory_online;
     char has_access;
 };
+
+long int config_lookup(const char *);
 
 #endif

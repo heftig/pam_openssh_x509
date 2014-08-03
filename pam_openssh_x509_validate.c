@@ -27,7 +27,7 @@ truncate_file(char *path)
 }
 
 static int
-access_granted(struct pam_ssh_x509_info *x509_info)
+access_granted(struct pam_openssh_x509_info *x509_info)
 {
     return (x509_info->is_revoked == 0 && x509_info->is_expired == 0 && x509_info->has_valid_signature == 1 && x509_info->has_access == 1);
 }
@@ -36,7 +36,7 @@ PAM_EXTERN int
 pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
     int rc;
-    struct pam_ssh_x509_info *x509_info;
+    struct pam_openssh_x509_info *x509_info;
     rc = pam_get_data(pamh, "x509_info", (const void **) &x509_info);
     if (rc == PAM_SUCCESS) {
         

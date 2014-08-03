@@ -5,12 +5,15 @@ date: 2013-06-10
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 #include <syslog.h>
 #include <sys/types.h>
 #include <pwd.h>
+#include <errno.h>
 
+#include <confuse.h>
 #include <ldap.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
@@ -31,12 +34,9 @@ date: 2013-06-10
 
 #define SEARCH_FILTER_BUFFER_SIZE       1024
 #define CERT_INFO_STRING_BUFFER_SIZE    1024
-#define LDAP_ATTR_SSH_ACCESS            "memberOf"
-#define LDAP_ATTR_CERT                  "userCertificate;binary"
 #define AUTH_KEYS_FILE                  ".ssh/authorized_keys"                  /* relative to home directory */
 
-static int log_prio = LOG_DEBUG | LOG_LOCAL1;
-static struct pam_ssh_x509_info *x509_info;
+static struct pam_openssh_x509_info *x509_info;
 static const char *own_fqdn = "test.ssh.hq";			                       /* TODO: CHANGE TO OBTAIN FQDN FROM SYSTEM */
 
 static int
@@ -49,45 +49,16 @@ is_msb_set(unsigned char byte)
     }
 }
 
-/* BEGIN POC ONLY */
-static char poc_val_sig = 1;
-static char poc_expired = 0;
-static char poc_revoked = 0;
-
-static void
-parse_args(int argc, const char **argv)
-{
-    if (argc == 3) {
-        if (strcmp(argv[0], "0") == 0) {
-            poc_val_sig = 0; 
-        } else {
-            poc_val_sig = 1;
-        }
-
-        if (strcmp(argv[1], "0") == 0) {
-            poc_expired = 0; 
-        } else {
-            poc_expired = 1;
-        }
-        
-        if (strcmp(argv[2], "0") == 0) {
-            poc_revoked = 0; 
-        } else {
-            poc_revoked = 1;
-        }
-    }
-}
-/* END POC ONLY */
-
 static void
 cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
 {
-    syslog(log_prio, "callback touched");
-    /* TODO: FREE ALL VALUES */
+	// THIS FUNCTION SHOULD BE CALLED THROUGH PAM_END() WHICH UNFORTUNATELY IS NOT HAPPENING FOR OPENSSH
+	// TODO: USE IF SUPPORTED
+    //syslog(log_prio, "callback touched");
 }
 
 static void
-init_data_transfer_object(struct pam_ssh_x509_info **x509_info)
+init_data_transfer_object(struct pam_openssh_x509_info **x509_info)
 {
     *x509_info = malloc(sizeof(**x509_info));
     if (*x509_info != NULL) {
@@ -130,40 +101,40 @@ static void
 check_signature(char *exchange_with_cert, char *has_valid_signature)
 {
     /* implement check of signature here */
-    *has_valid_signature = poc_val_sig;
+    //*has_valid_signature = poc_val_sig;
 }
 
 static void
 check_expiration(char *exchange_with_cert, char *is_expired)
 {
     /* implement check for expiration here */
-    *is_expired = poc_expired;
+    //*is_expired = poc_expired;
 }
 
 static void
 check_revocation(char *exchange_with_cert, char *is_revoked)
 {
     /* implement check for revocation here */
-    *is_revoked = poc_revoked;
+    //*is_revoked = poc_revoked;
 }
 
 static void
-extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
+extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa, cfg_t *cfg)
 {
     if (pkey == NULL) {
-        syslog(log_prio, "error: cannot get public key from certificate");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "error: cannot get public key from certificate");
         return;
     }
 
     switch (EVP_PKEY_type(pkey->type)) {
         case EVP_PKEY_RSA:
             {
-                syslog(log_prio, "Keytype: RSA");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "Keytype: RSA");
                 char *keyname = "ssh-rsa";
                 RSA *rsa = EVP_PKEY_get1_RSA(pkey);
                 if (rsa == NULL) {
                 /* unlikely */
-                    syslog(log_prio, "error: EVP_PKEY_get1_RSA()");
+                    syslog(cfg_getint(cfg, "pam_log_facility"), "error: EVP_PKEY_get1_RSA()");
                     break;
                 }
 
@@ -251,28 +222,28 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
             }
         case EVP_PKEY_DSA:
             {
-                syslog(log_prio, "dsa...");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "dsa...");
                 break;
             }
         case EVP_PKEY_DH:
             {
-                syslog(log_prio, "dh...");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "dh...");
                 break;
             }
         case EVP_PKEY_EC:
             {
-                syslog(log_prio, "ec...");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "ec...");
                 break;
             }
         default:
             {
-                syslog(log_prio, "error: unsupported public key type (pkey->type)");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "error: unsupported public key type (pkey->type)");
             }
     }
 }
 
 static void
-gather_information(const char *uid)
+gather_information(const char *uid, cfg_t *cfg)
 {
     LDAP *ldap_handle;
     LDAPMessage *ldap_result;
@@ -281,69 +252,55 @@ gather_information(const char *uid)
     char *attr;
     int rc, msgtype;
 
-    /* TODO: move to configuration file */
-    /* BEGIN CONFIGURATION */
-
-    /* connection specific */
-    const char *uri = "ldap://localhost:389";
-    const char *bind_dn = "cn=directory_manager,dc=ssh,dc=hq";
-    char pwd[] = "test123";
-    const char *mechanism = LDAP_SASL_SIMPLE;
-    const char *rdn_attribute = "uid";
-
-    /* search specific */
-    const char *base = "ou=person,dc=ssh,dc=hq";
-    struct timeval timeout = { 5, 0 };
-    int sizelimit = 10;
+    struct timeval timeout = { cfg_getint(cfg, "ldap_timeout"), 0 };
+    int sizelimit = 1;
+	int ldap_version = cfg_getint(cfg, "ldap_version");
     
-    /* END CONFIGURATION */
-
-    int scope = LDAP_SCOPE_ONE;
-    char *attrs[] = { LDAP_ATTR_CERT, LDAP_ATTR_SSH_ACCESS, '\0' };
-    struct berval cred = { strlen(pwd), pwd };
-    int version = LDAP_VERSION3;
+    char *attrs[] = { cfg_getstr(cfg, "ldap_attr_cert"), cfg_getstr(cfg, "ldap_attr_access"), '\0' };
+    struct berval cred = { strlen(cfg_getstr(cfg, "ldap_pwd")), cfg_getstr(cfg, "ldap_pwd") };
 
     /* construct filter */
-    unsigned int overflow = strlen(rdn_attribute) + strlen("=") + strlen(uid) + 1 <= SEARCH_FILTER_BUFFER_SIZE ? 0 : 1;
+    unsigned int overflow = strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(uid) + 1 <= SEARCH_FILTER_BUFFER_SIZE ? 0 : 1;
     if (overflow) {
-        syslog(log_prio, "internal error: there is not enough space to hold filter in buffer. increase SEARCH_FILTER_BUFFER_SIZE!");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "internal error: there is not enough space to hold filter in buffer. increase SEARCH_FILTER_BUFFER_SIZE!");
 
         return;
     }
     char filter[SEARCH_FILTER_BUFFER_SIZE];
-    strcpy(filter, rdn_attribute);
+    strcpy(filter, cfg_getstr(cfg, "ldap_attr_rdn_person"));
     strcat(filter, "=");
     strcat(filter, uid);
 
     /* init handle */
-    rc = ldap_initialize(&ldap_handle, uri);
+    rc = ldap_initialize(&ldap_handle, cfg_getstr(cfg, "ldap_uri"));
     if (rc == LDAP_SUCCESS) {
-        syslog(log_prio, "ldap_initialize() successful");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "ldap_initialize() successful");
     } else {
-        syslog(log_prio, "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
+        syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
 
         return;
     }
 
     /* set version */
-    rc = ldap_set_option(ldap_handle, LDAP_OPT_PROTOCOL_VERSION, &version);
+    rc = ldap_set_option(ldap_handle, LDAP_OPT_PROTOCOL_VERSION, &ldap_version);
     if (rc != LDAP_OPT_SUCCESS) {
-        syslog(log_prio, "ldap error: ldap_set_option()");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: ldap_set_option()");
 
         return;
     }
 
     /* bind to server */
-    rc = ldap_sasl_bind_s(ldap_handle, bind_dn, mechanism, &cred, NULL, NULL, NULL);
-    memset(pwd, 0, strlen(pwd));
+    rc = ldap_sasl_bind_s(ldap_handle, cfg_getstr(cfg, "ldap_bind_dn"), LDAP_SASL_SIMPLE, &cred, NULL, NULL, NULL);
+	// TODO: remove password from config file in memory here
+    //memset(pwd, 0, strlen(pwd));
     if (rc == LDAP_SUCCESS) {
-        syslog(log_prio, "ldap_sasl_bind_s() successful");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "ldap_sasl_bind_s() successful");
         x509_info->directory_online = 1;
 
         /* connection established */
-        rc = ldap_search_ext_s(ldap_handle, base, scope, filter, attrs, 0, NULL, NULL, &timeout, sizelimit, &ldap_result);
+        rc = ldap_search_ext_s(ldap_handle, cfg_getstr(cfg, "ldap_base"), cfg_getint(cfg, "ldap_scope"), filter, attrs, 0, NULL, NULL, &timeout, sizelimit, &ldap_result);
         if (rc == LDAP_SUCCESS) {
-            syslog(log_prio, "ldap_search_ext_s() successful");
+            syslog(cfg_getint(cfg, "pam_log_facility"), "ldap_search_ext_s() successful");
             
             /* loop over matching entries */
             for (ldap_result = ldap_first_message(ldap_handle, ldap_result); ldap_result != NULL; ldap_result = ldap_next_message(ldap_handle, ldap_result)) {
@@ -352,7 +309,7 @@ gather_information(const char *uid)
                     case LDAP_RES_SEARCH_ENTRY:
                         {
                             char *entry_dn = ldap_get_dn(ldap_handle, ldap_result); 
-                            syslog(log_prio, "DN: %s\n", entry_dn);
+                            syslog(cfg_getint(cfg, "pam_log_facility"), "DN: %s\n", entry_dn);
 
                             /* go through attributes */
                             for (attr = ldap_first_attribute(ldap_handle, ldap_result, &ber); attr != NULL; attr = ldap_next_attribute(ldap_handle, ldap_result, ber)) {
@@ -363,13 +320,13 @@ gather_information(const char *uid)
                                         char *value = bvals[i]->bv_val;
                                         ber_len_t len = bvals[i]->bv_len;
 
-                                        /* case: attr == LDAP_ATTR_SSH_ACCESS */
-                                        if (strcmp(attr, LDAP_ATTR_SSH_ACCESS) == 0) {
+                                        /* case: attr == ldap_attr_access */
+                                        if (strcmp(attr, cfg_getstr(cfg, "ldap_attr_access")) == 0) {
                                             /* check access permission based on group membership and store result */
                                             check_access(value, &(x509_info->has_access));
 
-                                        /* case: attr = LDAP_ATTR_CERT */
-                                        } else if (strcmp(attr, LDAP_ATTR_CERT) == 0) {
+                                        /* case: attr = ldap_attr_cert */
+                                        } else if (strcmp(attr, cfg_getstr(cfg, "ldap_attr_cert")) == 0) {
                                             x509_info->has_cert = 1;
 
                                             /* get public key */
@@ -377,7 +334,7 @@ gather_information(const char *uid)
                                             x509 = d2i_X509(NULL, (const unsigned char **) &value, len);
 
                                             if (x509 == NULL) {
-                                                syslog(log_prio, "error: cannot decode certificate");
+                                                syslog(cfg_getint(cfg, "pam_log_facility"), "error: cannot decode certificate");
                                                 continue;
                                             }
 
@@ -385,7 +342,7 @@ gather_information(const char *uid)
                                             pkey = X509_get_pubkey(x509);
 
                                             /* extract and store ssh-key from cert */
-                                            extract_ssh_key(pkey, &(x509_info->ssh_rsa));
+                                            extract_ssh_key(pkey, &(x509_info->ssh_rsa), cfg);
                                             
                                             /* check validation of cert and store result */
                                             check_signature(NULL, &(x509_info->has_valid_signature));
@@ -414,26 +371,26 @@ gather_information(const char *uid)
                     case LDAP_RES_SEARCH_REFERENCE:
                         {
                             /* handle references here */
-                            syslog(log_prio, "ldap error: unhandled msgtype (0x%x)\n", msgtype);
+                            syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: unhandled msgtype (0x%x)\n", msgtype);
                             break;
                         }
 
                     case LDAP_RES_SEARCH_RESULT:
                         {
                             /* handle results here */
-                            syslog(log_prio, "ldap error: unhandled msgtype (0x%x)\n", msgtype);
+                            syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: unhandled msgtype (0x%x)\n", msgtype);
                             break;
                         }
 
                     default:
                         {
-                            syslog(log_prio, "ldap error: undefined msgtype (0x%x)\n", msgtype);
+                            syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: undefined msgtype (0x%x)\n", msgtype);
                         }
                 }
             }
         } else {
             /* dn not found */
-            syslog(log_prio, "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
+            syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
         }
 
         /* clear result structure - even if no result has been found (see man page) */
@@ -442,39 +399,98 @@ gather_information(const char *uid)
         /* unbind */
         rc = ldap_unbind_ext_s(ldap_handle, NULL, NULL);
         if (rc == LDAP_SUCCESS) {
-            syslog(log_prio, "ldap_unbind_ext_s() successful"); 
+            syslog(cfg_getint(cfg, "pam_log_facility"), "ldap_unbind_ext_s() successful"); 
         } else {
-            syslog(log_prio, "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
+            syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
         }
 
     } else {
         /* bind not successful */
         x509_info->directory_online = 0;
-        syslog(log_prio, "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
+        syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
     }
+}
+
+static void cfg_error_handler
+(cfg_t *cfg, const char *fmt, va_list ap) 
+{
+	char error_msg[1024];
+	vsnprintf(error_msg, sizeof(error_msg), fmt, ap);
+	syslog(cfg_getint(cfg, "pam_log_facility"), "%s\n", error_msg);
+}
+
+static int cfg_value_parser_int
+(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result) 
+{
+	long int result_value = config_lookup(value);
+	if (result_value == -EINVAL) {
+		cfg_error(cfg, "[libconfuse]-parse_error: option: %s, value: %s", cfg_opt_name(opt), value);
+		return -1; 
+	}   
+
+	long int *ptr_result = result;
+	*ptr_result = result_value;
+
+	return 0;
 }
 
 PAM_EXTERN int
 pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-    int rc;
-    const char *uid;
+	int rc;
 
-    parse_args(argc, argv);
-    init_data_transfer_object(&x509_info); 
+	// BEGIN: parse config
+	cfg_opt_t opts[] = { 
+		CFG_INT_CB("pam_log_facility", config_lookup("LOG_LOCAL1"), CFGF_NONE, &cfg_value_parser_int),
+		CFG_STR("ldap_uri", "ldap://localhost:389", CFGF_NONE),
+		CFG_STR("ldap_bind_dn", NULL, CFGF_NODEFAULT),
+		CFG_STR("ldap_pwd", NULL, CFGF_NODEFAULT),
+		CFG_STR("ldap_base", NULL, CFGF_NODEFAULT),
+		CFG_INT_CB("ldap_scope", config_lookup("LDAP_SCOPE_ONE"), CFGF_NONE, &cfg_value_parser_int),
+		CFG_INT("ldap_timeout", 5, CFGF_NONE),
+		CFG_INT_CB("ldap_version", config_lookup("LDAP_VERSION3"), CFGF_NONE, &cfg_value_parser_int),
+		CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
+		CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
+		CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
+		CFG_END()
+	}; 
 
+	cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
+	// register callback for error handling
+	cfg_set_error_function(cfg, &cfg_error_handler);
+
+	if (argc != 1) {
+		syslog(cfg_getint(cfg, "pam_log_facility"), "arg count != 1");
+		goto auth_err;
+	}
+
+	switch (cfg_parse(cfg, argv[0]))
+	{
+		case CFG_SUCCESS:
+			break;
+
+		case CFG_FILE_ERROR:
+			cfg_error(cfg, "[libconfuse]-file_error: (%s) %s", argv[0], strerror(errno));
+
+		case CFG_PARSE_ERROR:
+			goto auth_err;
+	} 
+	// END: parse config
+    
+	init_data_transfer_object(&x509_info); 
     if (x509_info == NULL) {
-        syslog(log_prio, "init of data transfer object failed");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "init of data transfer object failed");
         goto auth_err;
     }
 
     /* make data transfer object available for module stack */
     rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
     if (rc != PAM_SUCCESS) {
-        syslog(log_prio, "error: pam_set_data()");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "error: pam_set_data()");
         goto auth_err;
     }
 
+	const char *uid;
     rc = pam_get_user(pamh, &uid, NULL);
     if (rc == PAM_SUCCESS) {
         /* check for local account */
@@ -487,7 +503,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
             x509_info->has_local_account = 1;
            
             /* get information from ldap server */
-            gather_information(uid);
+            gather_information(uid, cfg);
 
             /* construct authorized_keys path */
             int length_auth_keys_path = strlen(pwd->pw_dir) + 1 + strlen(AUTH_KEYS_FILE) + 1;
@@ -506,17 +522,21 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
             }
         }
     } else if (rc == PAM_SYSTEM_ERR) {
-        syslog(log_prio, "error: pam_get_user()");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "error: pam_get_user()");
         goto auth_err;
 
     } else if (rc == PAM_CONV_ERR) {
-        syslog(log_prio, "error: pam_get_user() => NULL POINTER");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "error: pam_get_user() => NULL POINTER");
         goto auth_err;
     }
 
     return PAM_SUCCESS;
 
     auth_err:
+		// free config
+		cfg_free_value(opts);
+		cfg_free(cfg);
+
         return PAM_AUTH_ERR;
 }
 
