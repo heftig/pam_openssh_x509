@@ -470,7 +470,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
     // register callback for error handling
     cfg_set_error_function(cfg, &cfg_error_handler);
-    // register callback for validatin ldap_uri
+    // register callback for validating ldap_uri
     cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
 
     if (argc != 1) {
