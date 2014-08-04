@@ -434,6 +434,18 @@ static int cfg_value_parser_int
     return 0;
 }
 
+static int cfg_validate_ldap_uri
+(cfg_t *cfg, cfg_opt_t *opt)
+{
+    const char *value = cfg_opt_getnstr(opt, 0);
+    if (ldap_is_ldap_url(value) == 0) {
+        cfg_error(cfg, "[libconfuse]-validation_error: option: %s, value: %s", cfg_opt_name(opt), value);
+        return -1;
+    }
+
+    return 0;
+}
+
 PAM_EXTERN int
 pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
@@ -458,6 +470,8 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
     // register callback for error handling
     cfg_set_error_function(cfg, &cfg_error_handler);
+    // register callback for validatin ldap_uri
+    cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
 
     if (argc != 1) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "arg count != 1");
@@ -476,7 +490,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
             goto auth_err;
     } 
     // END: parse config
-    
+
     init_data_transfer_object(&x509_info); 
     if (x509_info == NULL) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "init of data transfer object failed");
