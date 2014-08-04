@@ -37,7 +37,7 @@ date: 2013-06-10
 #define AUTH_KEYS_FILE                  ".ssh/authorized_keys"                  /* relative to home directory */
 
 static struct pam_openssh_x509_info *x509_info;
-static const char *own_fqdn = "test.ssh.hq";			                       /* TODO: CHANGE TO OBTAIN FQDN FROM SYSTEM */
+static const char *own_fqdn = "test.ssh.hq";                                   /* TODO: CHANGE TO OBTAIN FQDN FROM SYSTEM */
 
 static int
 is_msb_set(unsigned char byte)
@@ -52,8 +52,8 @@ is_msb_set(unsigned char byte)
 static void
 cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
 {
-	// THIS FUNCTION SHOULD BE CALLED THROUGH PAM_END() WHICH UNFORTUNATELY IS NOT HAPPENING FOR OPENSSH
-	// TODO: USE IF SUPPORTED
+    // THIS FUNCTION SHOULD BE CALLED THROUGH PAM_END() WHICH UNFORTUNATELY IS NOT HAPPENING FOR OPENSSH
+    // TODO: USE IF SUPPORTED
     //syslog(log_prio, "callback touched");
 }
 
@@ -254,7 +254,7 @@ gather_information(const char *uid, cfg_t *cfg)
 
     struct timeval timeout = { cfg_getint(cfg, "ldap_timeout"), 0 };
     int sizelimit = 1;
-	int ldap_version = cfg_getint(cfg, "ldap_version");
+    int ldap_version = cfg_getint(cfg, "ldap_version");
     
     char *attrs[] = { cfg_getstr(cfg, "ldap_attr_cert"), cfg_getstr(cfg, "ldap_attr_access"), '\0' };
     struct berval cred = { strlen(cfg_getstr(cfg, "ldap_pwd")), cfg_getstr(cfg, "ldap_pwd") };
@@ -291,7 +291,7 @@ gather_information(const char *uid, cfg_t *cfg)
 
     /* bind to server */
     rc = ldap_sasl_bind_s(ldap_handle, cfg_getstr(cfg, "ldap_bind_dn"), LDAP_SASL_SIMPLE, &cred, NULL, NULL, NULL);
-	// TODO: remove password from config file in memory here
+    // TODO: remove password from config file in memory here
     //memset(pwd, 0, strlen(pwd));
     if (rc == LDAP_SUCCESS) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "ldap_sasl_bind_s() successful");
@@ -414,70 +414,70 @@ gather_information(const char *uid, cfg_t *cfg)
 static void cfg_error_handler
 (cfg_t *cfg, const char *fmt, va_list ap) 
 {
-	char error_msg[1024];
-	vsnprintf(error_msg, sizeof(error_msg), fmt, ap);
-	syslog(cfg_getint(cfg, "pam_log_facility"), "%s\n", error_msg);
+    char error_msg[1024];
+    vsnprintf(error_msg, sizeof(error_msg), fmt, ap);
+    syslog(cfg_getint(cfg, "pam_log_facility"), "%s\n", error_msg);
 }
 
 static int cfg_value_parser_int
 (cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result) 
 {
-	long int result_value = config_lookup(value);
-	if (result_value == -EINVAL) {
-		cfg_error(cfg, "[libconfuse]-parse_error: option: %s, value: %s", cfg_opt_name(opt), value);
-		return -1; 
-	}   
+    long int result_value = config_lookup(value);
+    if (result_value == -EINVAL) {
+        cfg_error(cfg, "[libconfuse]-parse_error: option: %s, value: %s", cfg_opt_name(opt), value);
+        return -1; 
+    }   
 
-	long int *ptr_result = result;
-	*ptr_result = result_value;
+    long int *ptr_result = result;
+    *ptr_result = result_value;
 
-	return 0;
+    return 0;
 }
 
 PAM_EXTERN int
 pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-	int rc;
+    int rc;
 
-	// BEGIN: parse config
-	cfg_opt_t opts[] = { 
-		CFG_INT_CB("pam_log_facility", config_lookup("LOG_LOCAL1"), CFGF_NONE, &cfg_value_parser_int),
-		CFG_STR("ldap_uri", "ldap://localhost:389", CFGF_NONE),
-		CFG_STR("ldap_bind_dn", NULL, CFGF_NODEFAULT),
-		CFG_STR("ldap_pwd", NULL, CFGF_NODEFAULT),
-		CFG_STR("ldap_base", NULL, CFGF_NODEFAULT),
-		CFG_INT_CB("ldap_scope", config_lookup("LDAP_SCOPE_ONE"), CFGF_NONE, &cfg_value_parser_int),
-		CFG_INT("ldap_timeout", 5, CFGF_NONE),
-		CFG_INT_CB("ldap_version", config_lookup("LDAP_VERSION3"), CFGF_NONE, &cfg_value_parser_int),
-		CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
-		CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
-		CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
-		CFG_END()
-	}; 
+    // BEGIN: parse config
+    cfg_opt_t opts[] = { 
+        CFG_INT_CB("pam_log_facility", config_lookup("LOG_LOCAL1"), CFGF_NONE, &cfg_value_parser_int),
+        CFG_STR("ldap_uri", "ldap://localhost:389", CFGF_NONE),
+        CFG_STR("ldap_bind_dn", NULL, CFGF_NODEFAULT),
+        CFG_STR("ldap_pwd", NULL, CFGF_NODEFAULT),
+        CFG_STR("ldap_base", NULL, CFGF_NODEFAULT),
+        CFG_INT_CB("ldap_scope", config_lookup("LDAP_SCOPE_ONE"), CFGF_NONE, &cfg_value_parser_int),
+        CFG_INT("ldap_timeout", 5, CFGF_NONE),
+        CFG_INT_CB("ldap_version", config_lookup("LDAP_VERSION3"), CFGF_NONE, &cfg_value_parser_int),
+        CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
+        CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
+        CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
+        CFG_END()
+    }; 
 
-	cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
-	// register callback for error handling
-	cfg_set_error_function(cfg, &cfg_error_handler);
+    cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
+    // register callback for error handling
+    cfg_set_error_function(cfg, &cfg_error_handler);
 
-	if (argc != 1) {
-		syslog(cfg_getint(cfg, "pam_log_facility"), "arg count != 1");
-		goto auth_err;
-	}
+    if (argc != 1) {
+        syslog(cfg_getint(cfg, "pam_log_facility"), "arg count != 1");
+        goto auth_err;
+    }
 
-	switch (cfg_parse(cfg, argv[0]))
-	{
-		case CFG_SUCCESS:
-			break;
+    switch (cfg_parse(cfg, argv[0]))
+    {
+        case CFG_SUCCESS:
+            break;
 
-		case CFG_FILE_ERROR:
-			cfg_error(cfg, "[libconfuse]-file_error: (%s) %s", argv[0], strerror(errno));
+        case CFG_FILE_ERROR:
+            cfg_error(cfg, "[libconfuse]-file_error: (%s) %s", argv[0], strerror(errno));
 
-		case CFG_PARSE_ERROR:
-			goto auth_err;
-	} 
-	// END: parse config
+        case CFG_PARSE_ERROR:
+            goto auth_err;
+    } 
+    // END: parse config
     
-	init_data_transfer_object(&x509_info); 
+    init_data_transfer_object(&x509_info); 
     if (x509_info == NULL) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "init of data transfer object failed");
         goto auth_err;
@@ -490,7 +490,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         goto auth_err;
     }
 
-	const char *uid;
+    const char *uid;
     rc = pam_get_user(pamh, &uid, NULL);
     if (rc == PAM_SUCCESS) {
         /* check for local account */
@@ -533,9 +533,9 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     return PAM_SUCCESS;
 
     auth_err:
-		// free config
-		cfg_free_value(opts);
-		cfg_free(cfg);
+        // free config
+        cfg_free_value(opts);
+        cfg_free(cfg);
 
         return PAM_AUTH_ERR;
 }
