@@ -294,10 +294,13 @@ gather_information(const char *uid, cfg_t *cfg)
     // TODO: remove password from config file in memory here
     //memset(pwd, 0, strlen(pwd));
     if (rc == LDAP_SUCCESS) {
+        /* connection established */
         syslog(cfg_getint(cfg, "pam_log_facility"), "ldap_sasl_bind_s() successful");
         x509_info->directory_online = 1;
 
-        /* connection established */
+        /*
+         * search people tree for given uid and retrieve group memberships and x.509 certificate
+         */
         rc = ldap_search_ext_s(ldap_handle, cfg_getstr(cfg, "ldap_base"), cfg_getint(cfg, "ldap_scope"), filter, attrs, 0, NULL, NULL, &search_timeout, sizelimit, &ldap_result);
         if (rc == LDAP_SUCCESS) {
             syslog(cfg_getint(cfg, "pam_log_facility"), "ldap_search_ext_s() successful");
