@@ -299,7 +299,7 @@ gather_information(const char *uid, cfg_t *cfg)
         x509_info->directory_online = 1;
 
         /*
-         * search people tree for given uid and retrieve group memberships and x.509 certificate
+         * search people tree for given uid and retrieve group memberships/x.509 certificates
          */
         rc = ldap_search_ext_s(ldap_handle, cfg_getstr(cfg, "ldap_base"), cfg_getint(cfg, "ldap_scope"), filter, attrs, 0, NULL, NULL, &search_timeout, sizelimit, &ldap_result);
         if (rc == LDAP_SUCCESS) {
