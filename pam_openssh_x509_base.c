@@ -122,14 +122,14 @@ static void
 extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa, cfg_t *cfg)
 {
     if (pkey == NULL) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "error: cannot get public key from certificate");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "error: pkey == NULL");
         return;
     }
 
     switch (EVP_PKEY_type(pkey->type)) {
         case EVP_PKEY_RSA:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "Keytype: RSA");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "keytype: rsa");
                 char *keyname = "ssh-rsa";
                 RSA *rsa = EVP_PKEY_get1_RSA(pkey);
                 if (rsa == NULL) {
@@ -252,7 +252,7 @@ gather_information(const char *uid, cfg_t *cfg)
     char *attr;
     int rc, msgtype;
 
-    struct timeval timeout = { cfg_getint(cfg, "ldap_timeout"), 0 };
+    struct timeval search_timeout = { cfg_getint(cfg, "ldap_search_timeout"), 0 };
     int sizelimit = 1;
     int ldap_version = cfg_getint(cfg, "ldap_version");
     
@@ -298,36 +298,58 @@ gather_information(const char *uid, cfg_t *cfg)
         x509_info->directory_online = 1;
 
         /* connection established */
-        rc = ldap_search_ext_s(ldap_handle, cfg_getstr(cfg, "ldap_base"), cfg_getint(cfg, "ldap_scope"), filter, attrs, 0, NULL, NULL, &timeout, sizelimit, &ldap_result);
+        rc = ldap_search_ext_s(ldap_handle, cfg_getstr(cfg, "ldap_base"), cfg_getint(cfg, "ldap_scope"), filter, attrs, 0, NULL, NULL, &search_timeout, sizelimit, &ldap_result);
         if (rc == LDAP_SUCCESS) {
             syslog(cfg_getint(cfg, "pam_log_facility"), "ldap_search_ext_s() successful");
             
-            /* loop over matching entries */
+            /*
+             * iterate over matching entries
+             *
+             * even though sizelimit is 1 at least 2 messages will be returned (1x LDAP_RES_SEARCH_ENTRY + 1x LDAP_RES_SEARCH_ENTRY)
+             * so that we need to iterate over the result set instead of just retrieve and process the first message
+             */
             for (ldap_result = ldap_first_message(ldap_handle, ldap_result); ldap_result != NULL; ldap_result = ldap_next_message(ldap_handle, ldap_result)) {
-                
+
                 switch (msgtype = ldap_msgtype(ldap_result)) {
                     case LDAP_RES_SEARCH_ENTRY:
                         {
                             char *entry_dn = ldap_get_dn(ldap_handle, ldap_result); 
-                            syslog(cfg_getint(cfg, "pam_log_facility"), "DN: %s\n", entry_dn);
+                            syslog(cfg_getint(cfg, "pam_log_facility"), "dn: %s\n", entry_dn);
 
-                            /* go through attributes */
+                            /*
+                             * iterate over all requested attributes
+                             */
                             for (attr = ldap_first_attribute(ldap_handle, ldap_result, &ber); attr != NULL; attr = ldap_next_attribute(ldap_handle, ldap_result, ber)) {
-                                /* get corresponding values */
+                                /*
+                                 * result of ldap_get_values_len() is an array in order to handle
+                                 * mutivalued attributes
+                                 */
                                 if ((bvals = ldap_get_values_len(ldap_handle, ldap_result, attr)) != NULL) {
                                     int i;
                                     for (i = 0; bvals[i] != '\0'; i++) {
                                         char *value = bvals[i]->bv_val;
                                         ber_len_t len = bvals[i]->bv_len;
 
-                                        /* case: attr == ldap_attr_access */
+                                        /*
+                                         * process group memberships
+                                         */
                                         if (strcmp(attr, cfg_getstr(cfg, "ldap_attr_access")) == 0) {
+                                            /* stop looping over group memberships when access is already granted */
+                                            if (x509_info->has_access == 1) {
+                                                break;
+                                            }
+
                                             /* check access permission based on group membership and store result */
                                             check_access(value, &(x509_info->has_access));
 
-                                        /* case: attr = ldap_attr_cert */
+                                        /*
+                                         * process x.509 certificates
+                                         */ 
                                         } else if (strcmp(attr, cfg_getstr(cfg, "ldap_attr_cert")) == 0) {
-                                            x509_info->has_cert = 1;
+                                            /* stop looping over x.509 certificates when already found a valid one */
+                                            if (x509_info->has_cert == 1) {
+                                                break;
+                                            }
 
                                             /* get public key */
                                             X509 *x509;
@@ -335,32 +357,33 @@ gather_information(const char *uid, cfg_t *cfg)
 
                                             if (x509 == NULL) {
                                                 syslog(cfg_getint(cfg, "pam_log_facility"), "error: cannot decode certificate");
+                                                /* try next certificate if existing */
                                                 continue;
                                             }
+                                            x509_info->has_cert = 1;
 
                                             EVP_PKEY *pkey; 
                                             pkey = X509_get_pubkey(x509);
-
-                                            /* extract and store ssh-key from cert */
+                                            /* obtain information */
                                             extract_ssh_key(pkey, &(x509_info->ssh_rsa), cfg);
-                                            
-                                            /* check validation of cert and store result */
                                             check_signature(NULL, &(x509_info->has_valid_signature));
-
-                                            /* check if cert is expired and store result */
                                             check_expiration(NULL, &(x509_info->is_expired));
-
-                                            /* check if cert is revoked and store result */
                                             check_revocation(NULL, &(x509_info->is_revoked));
-                                            
-                                            /* extract some other data from cert */
                                             x509_info->subject = X509_NAME_oneline(X509_get_subject_name(x509), NULL, 0);
-                                            x509_info->serial = "1100101";
+                                            x509_info->serial = BN_bn2hex(ASN1_INTEGER_to_BN(X509_get_serialNumber(x509), 0));
                                             x509_info->issuer = X509_NAME_oneline(X509_get_issuer_name(x509), NULL, 0);
+
+                                        } else {
+                                            /* should be impossible */
+                                            syslog(cfg_getint(cfg, "pam_log_facility"), "unhandled (not requested) attribute: %s", attr);
                                         }
                                     }
-                                } 
-                                /* free values structure */
+
+                                } else {
+                                    /* unlikely */
+                                    syslog(cfg_getint(cfg, "pam_log_facility"), "error: ldap_get_values_len()"); 
+                                }
+                                /* free values structure after each iteration */
                                 ldap_value_free_len(bvals);
                             }
                             /* free attributes structure */
@@ -384,6 +407,7 @@ gather_information(const char *uid, cfg_t *cfg)
 
                     default:
                         {
+                            /* unlikely */
                             syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: undefined msgtype (0x%x)\n", msgtype);
                         }
                 }
@@ -439,7 +463,19 @@ static int cfg_validate_ldap_uri
 {
     const char *value = cfg_opt_getnstr(opt, 0);
     if (ldap_is_ldap_url(value) == 0) {
-        cfg_error(cfg, "[libconfuse]-validation_error: option: %s, value: %s", cfg_opt_name(opt), value);
+        cfg_error(cfg, "[libconfuse]-validation_error: option: %s, value: %s (value is not an ldap uri)", cfg_opt_name(opt), value);
+        return -1;
+    }
+
+    return 0;
+}
+
+static int cfg_validate_ldap_search_timeout
+(cfg_t *cfg, cfg_opt_t *opt)
+{
+    long int value = cfg_opt_getnint(opt, 0);
+    if (value <= 0) {
+        cfg_error(cfg, "[libconfuse]-validation_error: option: %s, value: %li (value must be > 0)", cfg_opt_name(opt), value);
         return -1;
     }
 
@@ -459,7 +495,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         CFG_STR("ldap_pwd", NULL, CFGF_NODEFAULT),
         CFG_STR("ldap_base", NULL, CFGF_NODEFAULT),
         CFG_INT_CB("ldap_scope", config_lookup("LDAP_SCOPE_ONE"), CFGF_NONE, &cfg_value_parser_int),
-        CFG_INT("ldap_timeout", 5, CFGF_NONE),
+        CFG_INT("ldap_search_timeout", 5, CFGF_NONE),
         CFG_INT_CB("ldap_version", config_lookup("LDAP_VERSION3"), CFGF_NONE, &cfg_value_parser_int),
         CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
         CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
@@ -472,6 +508,8 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     cfg_set_error_function(cfg, &cfg_error_handler);
     // register callback for validating ldap_uri
     cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
+    // register callback for validating ldap_search_timeout
+    cfg_set_validate_func(cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
 
     if (argc != 1) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "arg count != 1");
