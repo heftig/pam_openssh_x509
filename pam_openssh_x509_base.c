@@ -349,7 +349,7 @@ gather_information(const char *uid, cfg_t *cfg)
                                          * process x.509 certificates
                                          */ 
                                         } else if (strcmp(attr, cfg_getstr(cfg, "ldap_attr_cert")) == 0) {
-                                            /* stop looping over x.509 certificates when already found a valid one */
+                                            /* stop looping over x.509 certificates when a valid one has been already found */
                                             if (x509_info->has_cert == 1) {
                                                 break;
                                             }
