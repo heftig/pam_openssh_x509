@@ -1,8 +1,3 @@
-/*
-author: sebastian roland
-date: 2013-06-10
-*/
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -15,39 +10,18 @@ date: 2013-06-10
 
 #include <confuse.h>
 #include <ldap.h>
-#include <openssl/bio.h>
-#include <openssl/evp.h>
-#include <openssl/bn.h>
-#include <openssl/pem.h>
-#include <openssl/x509.h>
 
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>
 
 #include "include/pam_openssh_x509.h"
 
-#define PUT_32BIT(cp, value) ( \
-    (cp)[0] = (unsigned char)((value) >> 24), \
-    (cp)[1] = (unsigned char)((value) >> 16), \
-    (cp)[2] = (unsigned char)((value) >> 8), \
-    (cp)[3] = (unsigned char)(value) )
-
 #define SEARCH_FILTER_BUFFER_SIZE       1024
 #define CERT_INFO_STRING_BUFFER_SIZE    1024
+// TODO: outsource to config
 #define AUTH_KEYS_FILE                  ".ssh/authorized_keys"                  /* relative to home directory */
 
 static struct pam_openssh_x509_info *x509_info;
-static const char *own_fqdn = "test.ssh.hq";                                   /* TODO: CHANGE TO OBTAIN FQDN FROM SYSTEM */
-
-static int
-is_msb_set(unsigned char byte)
-{
-    if (byte & 0x80) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
 
 static void
 cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
@@ -55,191 +29,6 @@ cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
     // THIS FUNCTION SHOULD BE CALLED THROUGH PAM_END() WHICH UNFORTUNATELY IS NOT HAPPENING FOR OPENSSH
     // TODO: USE IF SUPPORTED
     //syslog(log_prio, "callback touched");
-}
-
-static void
-init_data_transfer_object(struct pam_openssh_x509_info **x509_info)
-{
-    *x509_info = malloc(sizeof(**x509_info));
-    if (*x509_info != NULL) {
-        /* set standard values */
-        memset(*x509_info, 0, sizeof(**x509_info));
-
-        (*x509_info)->has_cert = -1;
-        (*x509_info)->subject = NULL;
-        (*x509_info)->serial = NULL;
-        (*x509_info)->issuer = NULL;
-        (*x509_info)->is_expired = -1;
-        (*x509_info)->has_valid_signature = -1;
-        (*x509_info)->is_revoked = -1;
-        (*x509_info)->ssh_rsa = NULL;
-        (*x509_info)->authorized_keys_file = NULL;
-        (*x509_info)->has_local_account = -1;
-        (*x509_info)->directory_online = -1;
-        (*x509_info)->has_access = -1;
-    }
-}
-
-static void
-check_access(char *group_dn, char *has_access)
-{
-    char *stored_fqdn = strtok(group_dn, "=");
-    stored_fqdn = strtok(NULL, "_");
-    stored_fqdn = strtok(NULL, ",");
-
-    if (stored_fqdn && own_fqdn) {
-        if (strcmp(stored_fqdn, own_fqdn) == 0) {
-        /* attribute set for server */
-            *has_access = 1;
-            return;
-        }
-    }
-    *has_access = 0;
-}
-
-static void
-check_signature(char *exchange_with_cert, char *has_valid_signature)
-{
-    /* implement check of signature here */
-    //*has_valid_signature = poc_val_sig;
-}
-
-static void
-check_expiration(char *exchange_with_cert, char *is_expired)
-{
-    /* implement check for expiration here */
-    //*is_expired = poc_expired;
-}
-
-static void
-check_revocation(char *exchange_with_cert, char *is_revoked)
-{
-    /* implement check for revocation here */
-    //*is_revoked = poc_revoked;
-}
-
-static void
-extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa, cfg_t *cfg)
-{
-    if (pkey == NULL) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "error: pkey == NULL");
-        return;
-    }
-
-    switch (EVP_PKEY_type(pkey->type)) {
-        case EVP_PKEY_RSA:
-            {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "keytype: rsa");
-                char *keyname = "ssh-rsa";
-                RSA *rsa = EVP_PKEY_get1_RSA(pkey);
-                if (rsa == NULL) {
-                /* unlikely */
-                    syslog(cfg_getint(cfg, "pam_log_facility"), "error: EVP_PKEY_get1_RSA()");
-                    break;
-                }
-
-                /* create authorized_keys entry */
-                int length_keyname, length_exponent, length_modulus, pre_length_blob, post_length_blob;
-                length_keyname = strlen(keyname);
-                length_exponent = BN_num_bytes(rsa->e);
-                length_modulus = BN_num_bytes(rsa->n);
-
-                /* the 4 bytes hold the length of the following value and the 2 extra bytes before
-                 * the exponent and modulus are possibly needed to prefix the values with leading zeroes if the
-                 * most significant bit of them is set. this is to avoid misinterpreting the value as a
-                 * negative number later.
-                 */
-                pre_length_blob = 4 + length_keyname + 4 + 1 + length_exponent + 4 + 1 + length_modulus;
-
-                /* TODO: SET LIMIT FOR LENGTH OF BLOB TO AVOID STACK OVERFLOW */
-                unsigned char blob[pre_length_blob], *blob_p, blob_buffer[pre_length_blob];
-                blob_p = blob;
-                PUT_32BIT(blob_p, length_keyname);
-                blob_p += 4;
-                memcpy(blob_p, keyname, length_keyname);
-                blob_p += length_keyname;
-                BN_bn2bin(rsa->e, blob_buffer);
-
-                /* put length of exponent */
-                if (is_msb_set(blob_buffer[0])) {
-                    PUT_32BIT(blob_p, length_exponent + 1);
-                    blob_p += 4;
-                    *(blob_p++) = 0;
-                } else {
-                    PUT_32BIT(blob_p, length_exponent);
-                    blob_p += 4;
-                }
-                /* put exponent */
-                memcpy(blob_p, blob_buffer, length_exponent);
-                blob_p += length_exponent;
-                BN_bn2bin(rsa->n, blob_buffer);
-
-                /* put length of modulus */
-                if (is_msb_set(blob_buffer[0])) {
-                    PUT_32BIT(blob_p, length_modulus + 1);
-                    blob_p += 4;
-                    *(blob_p++) = 0;
-                } else {
-                    PUT_32BIT(blob_p, length_modulus);
-                    blob_p += 4;
-                }  
-                /* put modulus */
-                memcpy(blob_p, blob_buffer, length_modulus);
-                blob_p += length_modulus;
-                post_length_blob = blob_p - blob;
-
-                /* encode base64 */
-                int data_in;
-                long data_out;
-                unsigned char *tmp_result;
-                BIO *bio, *b64;
-
-                bio = BIO_new(BIO_s_mem()); 
-                b64 = BIO_new(BIO_f_base64());
-                BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-                b64 = BIO_push(b64, bio);
-                data_in = BIO_write(b64, blob, post_length_blob);
-                BIO_flush(b64);
-                data_out = BIO_get_mem_data(b64, &tmp_result); 
-
-                /* store key */
-                char *ssh_pkey = malloc(data_out + 1);
-                if (ssh_pkey != NULL) {
-                    memcpy(ssh_pkey, tmp_result, data_out);
-                    ssh_pkey[data_out] = '\0';
-                }
-                
-                /* probably there is already a pointer to allocated mem => free first */
-                free(*ssh_rsa);
-                *ssh_rsa = ssh_pkey;
-
-                /* clear structures */
-                BIO_free_all(b64);
-                RSA_free(rsa);
-                EVP_PKEY_free(pkey);
-                                                    
-                break;
-            }
-        case EVP_PKEY_DSA:
-            {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "dsa...");
-                break;
-            }
-        case EVP_PKEY_DH:
-            {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "dh...");
-                break;
-            }
-        case EVP_PKEY_EC:
-            {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "ec...");
-                break;
-            }
-        default:
-            {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "error: unsupported public key type (pkey->type)");
-            }
-    }
 }
 
 static void
@@ -291,8 +80,8 @@ gather_information(const char *uid, cfg_t *cfg)
 
     /* bind to server */
     rc = ldap_sasl_bind_s(ldap_handle, cfg_getstr(cfg, "ldap_bind_dn"), LDAP_SASL_SIMPLE, &cred, NULL, NULL, NULL);
-    // TODO: remove password from config file in memory here
-    //memset(pwd, 0, strlen(pwd));
+    memset(cfg_getstr(cfg, "ldap_pwd"), 0, strlen(cfg_getstr(cfg, "ldap_pwd")));
+
     if (rc == LDAP_SUCCESS) {
         /* connection established */
         syslog(cfg_getint(cfg, "pam_log_facility"), "ldap_sasl_bind_s() successful");
@@ -341,7 +130,6 @@ gather_information(const char *uid, cfg_t *cfg)
                                             if (x509_info->has_access == 1) {
                                                 break;
                                             }
-
                                             /* check access permission based on group membership and store result */
                                             check_access(value, &(x509_info->has_access));
 
@@ -349,11 +137,10 @@ gather_information(const char *uid, cfg_t *cfg)
                                          * process x.509 certificates
                                          */ 
                                         } else if (strcmp(attr, cfg_getstr(cfg, "ldap_attr_cert")) == 0) {
-                                            /* stop looping over x.509 certificates when a valid one has been already found */
+                                            /* stop looping over x.509 certificates when a valid one has already been found */
                                             if (x509_info->has_cert == 1) {
                                                 break;
                                             }
-
                                             /* get public key */
                                             X509 *x509;
                                             x509 = d2i_X509(NULL, (const unsigned char **) &value, len);
@@ -397,6 +184,7 @@ gather_information(const char *uid, cfg_t *cfg)
                     case LDAP_RES_SEARCH_REFERENCE:
                         {
                             /* handle references here */
+                            /* TODO: entry could be a reference. should be able to handle that */
                             syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: unhandled msgtype (0x%x)\n", msgtype);
                             break;
                         }
@@ -404,6 +192,7 @@ gather_information(const char *uid, cfg_t *cfg)
                     case LDAP_RES_SEARCH_RESULT:
                         {
                             /* handle results here */
+                            /* TODO: last message is always of type LDAP_RES_SEARCH_RESULT. Analyse what can be done with it */
                             syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: unhandled msgtype (0x%x)\n", msgtype);
                             break;
                         }
@@ -549,6 +338,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     rc = pam_get_user(pamh, &uid, NULL);
     if (rc == PAM_SUCCESS) {
         /* check for local account */
+        /* TODO: check if this is still needed */
         struct passwd *pwd;
 
         pwd = getpwnam(uid);
