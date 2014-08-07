@@ -51,8 +51,7 @@ gather_information(const char *uid, cfg_t *cfg)
     /* construct filter */
     unsigned int overflow = strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(uid) + 1 <= SEARCH_FILTER_BUFFER_SIZE ? 0 : 1;
     if (overflow) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "internal error: there is not enough space to hold filter in buffer. increase SEARCH_FILTER_BUFFER_SIZE!");
-
+        syslog(cfg_getint(cfg, "pam_log_facility"), "internal error: there is not enough space to hold filter in buffer");
         return;
     }
     char filter[SEARCH_FILTER_BUFFER_SIZE];
@@ -205,6 +204,7 @@ gather_information(const char *uid, cfg_t *cfg)
                 }
             }
         } else {
+            /* TODO: guess it has to be search failed */
             /* dn not found */
             syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
         }
@@ -337,16 +337,21 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     const char *uid;
     rc = pam_get_user(pamh, &uid, NULL);
     if (rc == PAM_SUCCESS) {
-        /* check for local account */
-        /* TODO: check if this is still needed */
+        /*
+         * check for local account
+         *
+         * this is needed because openssh validates local account after running
+         * the pam modules so that the whole pam module chain would run all the
+         * time an invalid user would try to connect
+         */
         struct passwd *pwd;
-
         pwd = getpwnam(uid);
+
         if (pwd == NULL) {
-            x509_info->has_local_account = 0;
+            syslog(cfg_getint(cfg, "pam_log_facility"), "error: user '%s' has no local account", uid);
+            goto auth_err;
+
         } else {
-            x509_info->has_local_account = 1;
-           
             /* get information from ldap server */
             gather_information(uid, cfg);
 

@@ -83,7 +83,6 @@ init_data_transfer_object(struct pam_openssh_x509_info **x509_info)
         (*x509_info)->is_revoked = -1;
         (*x509_info)->ssh_rsa = NULL;
         (*x509_info)->authorized_keys_file = NULL;
-        (*x509_info)->has_local_account = -1;
         (*x509_info)->directory_online = -1;
         (*x509_info)->has_access = -1;
     }

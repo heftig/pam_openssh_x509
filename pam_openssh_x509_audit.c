@@ -43,7 +43,6 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         if (x509_info->authorized_keys_file != NULL) 
             syslog(log_prio, "auth_keys_file: %s", x509_info->authorized_keys_file);
 
-        syslog(log_prio, "has_local_account: %d", x509_info->has_local_account);
         syslog(log_prio, "directory_online: %d", x509_info->directory_online);
         syslog(log_prio, "has_access: %d", x509_info->has_access);
         syslog(log_prio, "===================================================");

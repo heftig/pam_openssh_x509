@@ -40,9 +40,6 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     rc = pam_get_data(pamh, "x509_info", (const void **) &x509_info);
     if (rc == PAM_SUCCESS) {
         
-        if (x509_info->has_local_account != 1)
-            goto auth_err;
-
         if (x509_info->has_cert == 1) {
             if (access_granted(x509_info)) {
                 syslog(log_prio, "ACCESS GRANTED :)");

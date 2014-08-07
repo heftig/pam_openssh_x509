@@ -40,7 +40,6 @@ struct pam_openssh_x509_info {
     char *authorized_keys_file;
 
     /* additional */
-    char has_local_account;
     char directory_online;
     char has_access;
 };
