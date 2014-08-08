@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdbool.h>
 #include <ctype.h>
 #include <syslog.h>
 #include <sys/types.h>
@@ -49,7 +50,7 @@ gather_information(const char *uid, cfg_t *cfg)
     struct berval cred = { strlen(cfg_getstr(cfg, "ldap_pwd")), cfg_getstr(cfg, "ldap_pwd") };
 
     /* construct filter */
-    unsigned int overflow = strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(uid) + 1 <= SEARCH_FILTER_BUFFER_SIZE ? 0 : 1;
+    bool overflow = (strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(uid) + 1 <= SEARCH_FILTER_BUFFER_SIZE) ? 0 : 1;
     if (overflow) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "internal error: there is not enough space to hold filter in buffer");
         return;
@@ -111,6 +112,8 @@ gather_information(const char *uid, cfg_t *cfg)
                              * iterate over all requested attributes
                              */
                             for (attr = ldap_first_attribute(ldap_handle, ldap_result, &ber); attr != NULL; attr = ldap_next_attribute(ldap_handle, ldap_result, ber)) {
+                                bool is_attr_access = (strcmp(attr, cfg_getstr(cfg, "ldap_attr_access")) == 0) ? 1 : 0;
+                                bool is_attr_cert = (strcmp(attr, cfg_getstr(cfg, "ldap_attr_cert")) == 0) ? 1 : 0;
                                 /*
                                  * result of ldap_get_values_len() is an array in order to handle
                                  * mutivalued attributes
@@ -124,7 +127,7 @@ gather_information(const char *uid, cfg_t *cfg)
                                         /*
                                          * process group memberships
                                          */
-                                        if (strcmp(attr, cfg_getstr(cfg, "ldap_attr_access")) == 0) {
+                                        if (is_attr_access) {
                                             /* stop looping over group memberships when access is already granted */
                                             if (x509_info->has_access == 1) {
                                                 break;
@@ -135,7 +138,7 @@ gather_information(const char *uid, cfg_t *cfg)
                                         /*
                                          * process x.509 certificates
                                          */ 
-                                        } else if (strcmp(attr, cfg_getstr(cfg, "ldap_attr_cert")) == 0) {
+                                        } else if (is_attr_cert) {
                                             /* stop looping over x.509 certificates when a valid one has already been found */
                                             if (x509_info->has_cert == 1) {
                                                 break;
@@ -173,6 +176,7 @@ gather_information(const char *uid, cfg_t *cfg)
                                     syslog(cfg_getint(cfg, "pam_log_facility"), "error: ldap_get_values_len()"); 
                                 }
                                 /* free values structure after each iteration */
+                                /* TODO: if nothing was allocated this will fail... problem is what happens if ldap_get_values_len() fails. do we have allocated memory or not */
                                 ldap_value_free_len(bvals);
                             }
                             /* free attributes structure */
@@ -204,9 +208,8 @@ gather_information(const char *uid, cfg_t *cfg)
                 }
             }
         } else {
-            /* TODO: guess it has to be search failed */
-            /* dn not found */
-            syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
+            /* ldap_search_ext_s() error */
+            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] {libldap}(ldap_search_ext_s()): '%s' (%d)", ldap_err2string(rc), rc);
         }
 
         /* clear result structure - even if no result has been found (see man page) */
@@ -215,9 +218,9 @@ gather_information(const char *uid, cfg_t *cfg)
         /* unbind */
         rc = ldap_unbind_ext_s(ldap_handle, NULL, NULL);
         if (rc == LDAP_SUCCESS) {
-            syslog(cfg_getint(cfg, "pam_log_facility"), "ldap_unbind_ext_s() successful"); 
+            syslog(cfg_getint(cfg, "pam_log_facility"), "[+] {libldap}(ldap_unbind_ext_s())"); 
         } else {
-            syslog(cfg_getint(cfg, "pam_log_facility"), "ldap error: '%s' (%d)", ldap_err2string(rc), rc);
+            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] {libldap}(ldap_unbind_ext_s()): '%s' (%d)", ldap_err2string(rc), rc);
         }
 
     } else {
