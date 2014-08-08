@@ -130,19 +130,19 @@ void
 extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa, cfg_t *cfg)
 {
     if (pkey == NULL) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "error: pkey == NULL");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] extract_ssh_key(): pkey == NULL");
         return;
     }
 
     switch (EVP_PKEY_type(pkey->type)) {
         case EVP_PKEY_RSA:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "keytype: rsa");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "[#] keytype: rsa");
                 char *keyname = "ssh-rsa";
                 RSA *rsa = EVP_PKEY_get1_RSA(pkey);
                 if (rsa == NULL) {
                 /* unlikely */
-                    syslog(cfg_getint(cfg, "pam_log_facility"), "error: EVP_PKEY_get1_RSA()");
+                    syslog(cfg_getint(cfg, "pam_log_facility"), "[-] EVP_PKEY_get1_RSA(): rsa == NULL");
                     break;
                 }
 
@@ -230,22 +230,22 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa, cfg_t *cfg)
             }
         case EVP_PKEY_DSA:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "dsa...");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "[#] dsa...");
                 break;
             }
         case EVP_PKEY_DH:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "dh...");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "[#] dh...");
                 break;
             }
         case EVP_PKEY_EC:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "ec...");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "[#] ec...");
                 break;
             }
         default:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "error: unsupported public key type (pkey->type)");
+                syslog(cfg_getint(cfg, "pam_log_facility"), "[-] unsupported public key type (%i)", pkey->type);
             }
     }
 }
