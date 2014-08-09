@@ -89,22 +89,22 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
 }
 
 void percent_expand
-(char token, char *repl, char *src, char *dst, int dst_length)
+(char token, char *subst, char *src, char *dst, int dst_length)
 {
     if (src != NULL && dst != NULL) {
         bool cdt = 0;
         int j = 0;
-        size_t strlen_repl = strlen(repl);
+        size_t strlen_subst = strlen(subst);
         int i;
         for (i = 0; (src[i] != '\0') && (j < dst_length - 1); i++) {
             if (cdt) {
                 cdt = 0;
                 if (src[i] == token) {
                     j--;
-                    /* replace token in dst buffer */
+                    /* substitute token in dst buffer */
                     int k;
-                    for (k = 0; (j < dst_length - 1) && (k < strlen_repl); k++) {
-                        dst[j++] = repl[k];
+                    for (k = 0; (j < dst_length - 1) && (k < strlen_subst); k++) {
+                        dst[j++] = subst[k];
                     }
                     continue;
                 }
