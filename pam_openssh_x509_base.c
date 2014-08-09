@@ -17,10 +17,10 @@
 
 #include "include/pam_openssh_x509.h"
 
-#define SEARCH_FILTER_BUFFER_SIZE       1024
-#define CERT_INFO_STRING_BUFFER_SIZE    1024
-// TODO: outsource to config
-#define AUTH_KEYS_FILE                  ".ssh/authorized_keys"                  /* relative to home directory */
+#define SEARCH_FILTER_BUFFER_SIZE           1024
+#define CERT_INFO_STRING_BUFFER_SIZE        1024
+#define UID_BUFFER_SIZE                     33
+#define AUTHORIZED_KEYS_FILE_BUFFER_SIZE    1024
 
 static struct pam_openssh_x509_info *x509_info;
 
@@ -33,7 +33,7 @@ cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
 }
 
 static void
-gather_information(const char *uid, cfg_t *cfg)
+query_ldap(cfg_t *cfg)
 {
     LDAP *ldap_handle = NULL;
     LDAPMessage *ldap_result = NULL;
@@ -50,7 +50,7 @@ gather_information(const char *uid, cfg_t *cfg)
     struct berval cred = { strlen(cfg_getstr(cfg, "ldap_pwd")), cfg_getstr(cfg, "ldap_pwd") };
 
     /* construct filter */
-    bool overflow = strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(uid) + 1 <= SEARCH_FILTER_BUFFER_SIZE ? 0 : 1;
+    bool overflow = strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(x509_info->uid) + 1 <= SEARCH_FILTER_BUFFER_SIZE ? 0 : 1;
     if (overflow) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "[-] there is not enough space to hold filter in buffer");
 
@@ -59,7 +59,7 @@ gather_information(const char *uid, cfg_t *cfg)
     char filter[SEARCH_FILTER_BUFFER_SIZE];
     strcpy(filter, cfg_getstr(cfg, "ldap_attr_rdn_person"));
     strcat(filter, "=");
-    strcat(filter, uid);
+    strcat(filter, x509_info->uid);
 
     /* init handle */
     rc = ldap_initialize(&ldap_handle, cfg_getstr(cfg, "ldap_uri"));
@@ -156,9 +156,10 @@ gather_information(const char *uid, cfg_t *cfg)
                                             x509_info->has_cert = 1;
 
                                             EVP_PKEY *pkey; 
+                                            /* TODO: free everything that has been gathered through openssl and malloc own space */
                                             pkey = X509_get_pubkey(x509);
                                             /* obtain information */
-                                            extract_ssh_key(pkey, &(x509_info->ssh_rsa), cfg);
+                                            extract_ssh_key(cfg, pkey, &(x509_info->ssh_rsa));
                                             check_signature(NULL, &(x509_info->has_valid_signature));
                                             check_expiration(NULL, &(x509_info->is_expired));
                                             check_revocation(NULL, &(x509_info->is_revoked));
@@ -221,21 +222,22 @@ gather_information(const char *uid, cfg_t *cfg)
     }
 
     unbind_and_free_handle:
-	/*
-     * unbind and free ldap_handle
-     *
-     * it is important to unbind also when the bind has actually failed because
-     * else the ldap_handler structure that has been initialized before would
-     * never be freed leading to a memory leak
-     */
-    if (ldap_handle != NULL) {
-        rc = ldap_unbind_ext_s(ldap_handle, NULL, NULL);
-        if (rc == LDAP_SUCCESS) {
-            syslog(cfg_getint(cfg, "pam_log_facility"), "[+] ldap_unbind_ext_s()"); 
-        } else {
-            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_unbind_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
+        /*
+         * unbind and free ldap_handle
+         *
+         * it is important to unbind also when the bind has actually failed because
+         * else the ldap_handle structure that has been initialized before would
+         * never be freed leading to a memory leak
+         *
+         */
+        if (ldap_handle != NULL) {
+            rc = ldap_unbind_ext_s(ldap_handle, NULL, NULL);
+            if (rc == LDAP_SUCCESS) {
+                syslog(cfg_getint(cfg, "pam_log_facility"), "[+] ldap_unbind_ext_s()");
+            } else {
+                syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_unbind_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
+            }
         }
-    }
 }
 
 static void cfg_error_handler
@@ -246,12 +248,12 @@ static void cfg_error_handler
     syslog(cfg_getint(cfg, "pam_log_facility"), "[-] %s\n", error_msg);
 }
 
-static int cfg_value_parser_int
+static int cfg_value_parser_lookup
 (cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result) 
 {
     long int result_value = config_lookup(value);
     if (result_value == -EINVAL) {
-        cfg_error(cfg, "[libconfuse]-parse_error: option: %s, value: %s", cfg_opt_name(opt), value);
+        cfg_error(cfg, "cfg_value_parser_int(): option: '%s', value: '%s'", cfg_opt_name(opt), value);
         return -1; 
     }   
 
@@ -264,9 +266,9 @@ static int cfg_value_parser_int
 static int cfg_validate_ldap_uri
 (cfg_t *cfg, cfg_opt_t *opt)
 {
-    const char *value = cfg_opt_getnstr(opt, 0);
-    if (ldap_is_ldap_url(value) == 0) {
-        cfg_error(cfg, "[libconfuse]-validation_error: option: %s, value: %s (value is not an ldap uri)", cfg_opt_name(opt), value);
+    const char *ldap_uri = cfg_opt_getnstr(opt, 0);
+    if (ldap_is_ldap_url(ldap_uri) == 0) {
+        cfg_error(cfg, "cfg_validate_ldap_uri(): option: '%s', value: '%s' (value is not an ldap uri)", cfg_opt_name(opt), ldap_uri);
         return -1;
     }
 
@@ -276,78 +278,119 @@ static int cfg_validate_ldap_uri
 static int cfg_validate_ldap_search_timeout
 (cfg_t *cfg, cfg_opt_t *opt)
 {
-    long int value = cfg_opt_getnint(opt, 0);
-    if (value <= 0) {
-        cfg_error(cfg, "[libconfuse]-validation_error: option: %s, value: %li (value must be > 0)", cfg_opt_name(opt), value);
+    long int timeout = cfg_opt_getnint(opt, 0);
+    if (timeout <= 0) {
+        cfg_error(cfg, "cfg_validate_ldap_search_timeout():  '%s', value: '%li' (value must be > 0)", cfg_opt_name(opt), timeout);
         return -1;
     }
 
     return 0;
 }
 
+static int cfg_validate_authorized_keys_file
+(cfg_t *cfg, cfg_opt_t *opt)
+{
+    char *path = cfg_opt_getnstr(opt, 0);
+    char *expanded_path = malloc(AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
+    if (expanded_path != NULL) {
+        percent_expand('u', x509_info->uid, path, expanded_path, AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
+        x509_info->authorized_keys_file = expanded_path;
+
+        /* check if file is read and writable */
+        FILE *access_test = fopen(x509_info->authorized_keys_file, "a+");
+        if (access_test != NULL) {
+                fclose(access_test);
+                return 0;
+        } else {
+            cfg_error(cfg, "cfg_validate_authorized_keys_file(): '%s' is not readable / writable", x509_info->authorized_keys_file);
+        }
+
+    } else {
+        cfg_error(cfg, "cfg_validate_authorized_keys_file(): malloc() failed");
+    }
+
+    return -1;
+}
+
 PAM_EXTERN int
 pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-    int rc;
-
-    // BEGIN: parse config
+    /* setup config options */
     cfg_opt_t opts[] = { 
-        CFG_INT_CB("pam_log_facility", config_lookup("LOG_LOCAL1"), CFGF_NONE, &cfg_value_parser_int),
+        CFG_INT_CB("pam_log_facility", config_lookup("LOG_LOCAL1"), CFGF_NONE, &cfg_value_parser_lookup),
         CFG_STR("ldap_uri", "ldap://localhost:389", CFGF_NONE),
         CFG_STR("ldap_bind_dn", NULL, CFGF_NODEFAULT),
         CFG_STR("ldap_pwd", NULL, CFGF_NODEFAULT),
         CFG_STR("ldap_base", NULL, CFGF_NODEFAULT),
-        CFG_INT_CB("ldap_scope", config_lookup("LDAP_SCOPE_ONE"), CFGF_NONE, &cfg_value_parser_int),
+        CFG_INT_CB("ldap_scope", config_lookup("LDAP_SCOPE_ONE"), CFGF_NONE, &cfg_value_parser_lookup),
         CFG_INT("ldap_search_timeout", 5, CFGF_NONE),
-        CFG_INT_CB("ldap_version", config_lookup("LDAP_VERSION3"), CFGF_NONE, &cfg_value_parser_int),
+        CFG_INT_CB("ldap_version", config_lookup("LDAP_VERSION3"), CFGF_NONE, &cfg_value_parser_lookup),
         CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
         CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
         CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
+        CFG_STR("authorized_keys_file", "/usr/local/etc/ssh/keystore/%u/authorized_keys", CFGF_NONE),
         CFG_END()
     }; 
 
+    /*
+     * initalizing config
+     *
+     * default values will be initialized. after it we can log. syslog facility will be the
+     * default value specified above
+     *
+     */
     cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
-    // register callback for error handling
+    /* register callbacks */
     cfg_set_error_function(cfg, &cfg_error_handler);
-    // register callback for validating ldap_uri
     cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
-    // register callback for validating ldap_search_timeout
     cfg_set_validate_func(cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
+    cfg_set_validate_func(cfg, "authorized_keys_file", &cfg_validate_authorized_keys_file);
 
+    /* first argument must be path to config file */
     if (argc != 1) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "[-] arg count != 1");
         goto auth_err;
     }
 
-    switch (cfg_parse(cfg, argv[0]))
-    {
-        case CFG_SUCCESS:
-            break;
-
-        case CFG_FILE_ERROR:
-            cfg_error(cfg, "[libconfuse]-file_error: (%s) %s", argv[0], strerror(errno));
-
-        case CFG_PARSE_ERROR:
-            goto auth_err;
-    } 
-    // END: parse config
-
-    init_data_transfer_object(&x509_info); 
-    if (x509_info == NULL) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[i] init of data transfer object failed");
+    /*
+     * initialize data transfer object
+     *
+     * the validation of the authorized_keys_file config option needs the uid of the
+     * connecting user. in order to not call pam_get_user() more than once the data
+     * transfer object will be initialized before parsing the config file.
+     * the uid will be put there so that the validation callback can access it then
+     *
+     */
+    x509_info = malloc(sizeof(*x509_info));
+    if (x509_info != NULL) {
+        init_data_transfer_object(x509_info);
+    } else {
+        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] init of data transfer object failed");
         goto auth_err;
     }
 
     /* make data transfer object available for module stack */
-    rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
+    int rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
     if (rc != PAM_SUCCESS) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "[-] pam_set_data()");
         goto auth_err;
     }
 
-    const char *uid;
+    /* retrieve uid and check for local account */
+    const char *uid = NULL;
     rc = pam_get_user(pamh, &uid, NULL);
     if (rc == PAM_SUCCESS) {
+        /*
+         * make uid available in data transfer object. do not point to value in
+         * pam space because if we free our data structure we would free it from
+         * global pam space as well. other modules could rely on it
+         *
+         */
+        x509_info->uid = strndup(uid, UID_BUFFER_SIZE);
+        if (x509_info->uid == NULL) {
+            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] strndup()");
+            goto auth_err;
+        }
         /*
          * check for local account
          *
@@ -355,50 +398,50 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
          * the pam modules so that the whole pam module chain would run all the
          * time an invalid user would try to connect
          */
-        struct passwd *pwd;
-        pwd = getpwnam(uid);
+        struct passwd *pwd = NULL;
+        pwd = getpwnam(x509_info->uid);
 
         if (pwd == NULL) {
-            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] user '%s' has no local account", uid);
+            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] user '%s' has no local account", x509_info->uid);
             goto auth_err;
-
-        } else {
-            /* get information from ldap server */
-            gather_information(uid, cfg);
-
-            /* construct authorized_keys path */
-            int length_auth_keys_path = strlen(pwd->pw_dir) + 1 + strlen(AUTH_KEYS_FILE) + 1;
-            char path[length_auth_keys_path];
-            memcpy(path, pwd->pw_dir, strlen(pwd->pw_dir) + 1);
-            strcat(path, "/");
-            strcat(path, AUTH_KEYS_FILE);
-
-            FILE *access_test = fopen(path, "a+");
-            if (access_test != NULL) {
-                x509_info->authorized_keys_file = malloc(strlen(path) + 1);
-                    if (x509_info->authorized_keys_file != NULL)
-                        memcpy(x509_info->authorized_keys_file, path, strlen(path) + 1);
-
-                fclose(access_test);
-            }
         }
+
     } else if (rc == PAM_SYSTEM_ERR) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] pam_get_user()");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] pam_get_user(): (%i)", rc);
         goto auth_err;
 
     } else if (rc == PAM_CONV_ERR) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] pam_get_user()");
+        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] pam_get_user(): (%i)", rc);
         goto auth_err;
     }
+
+    /* parse config */
+    switch (cfg_parse(cfg, argv[0]))
+    {
+        case CFG_SUCCESS:
+            break;
+
+        case CFG_FILE_ERROR:
+            cfg_error(cfg, "cfg_parse(): file: '%s', '%s'", argv[0], strerror(errno));
+
+        case CFG_PARSE_ERROR:
+            goto auth_err;
+    }
+
+    /*
+     * query ldap server and retrieve access permission and certificate of user
+     *
+     */
+    query_ldap(cfg);
 
     return PAM_SUCCESS;
 
     auth_err:
-	// free config
-    cfg_free_value(opts);
-    cfg_free(cfg);
+	    // free config
+        cfg_free_value(opts);
+        cfg_free(cfg);
 
-    return PAM_AUTH_ERR;
+        return PAM_AUTH_ERR;
 }
 
 PAM_EXTERN int

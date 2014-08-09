@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <syslog.h>
 
@@ -36,8 +37,9 @@ struct pam_openssh_x509_info {
     char is_revoked;
 
     /* openssh related */
-    char *ssh_rsa;
+    char *uid;
     char *authorized_keys_file;
+    char *ssh_rsa;
 
     /* additional */
     char directory_online;
@@ -46,11 +48,12 @@ struct pam_openssh_x509_info {
 
 /* function declarations */
 long int config_lookup(const char *key);
-void init_data_transfer_object(struct pam_openssh_x509_info **x509_info);
+void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
+void percent_expand(char token, char *repl, char *src, char *dst, int dst_length);
 void check_access(char *group_dn, char *has_access);
 void check_signature(char *exchange_with_cert, char *has_valid_signature);
 void check_expiration(char *exchange_with_cert, char *is_expired);
 void check_revocation(char *exchange_with_cert, char *is_revoked);
-void extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa, cfg_t *cfg);
+void extract_ssh_key(cfg_t *cfg, EVP_PKEY *pkey, char **ssh_rsa);
 
 #endif

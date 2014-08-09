@@ -67,24 +67,55 @@ config_lookup(const char *key)
 }
 
 void
-init_data_transfer_object(struct pam_openssh_x509_info **x509_info)
+init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
 {
-    *x509_info = malloc(sizeof(**x509_info));
-    if (*x509_info != NULL) {
+    if (x509_info != NULL) {
         /* set standard values */
-        memset(*x509_info, 0, sizeof(**x509_info));
+        memset(x509_info, 0, sizeof(*x509_info));
 
-        (*x509_info)->has_cert = -1;
-        (*x509_info)->subject = NULL;
-        (*x509_info)->serial = NULL;
-        (*x509_info)->issuer = NULL;
-        (*x509_info)->is_expired = -1;
-        (*x509_info)->has_valid_signature = -1;
-        (*x509_info)->is_revoked = -1;
-        (*x509_info)->ssh_rsa = NULL;
-        (*x509_info)->authorized_keys_file = NULL;
-        (*x509_info)->directory_online = -1;
-        (*x509_info)->has_access = -1;
+        x509_info->has_cert = -1;
+        x509_info->subject = NULL;
+        x509_info->serial = NULL;
+        x509_info->issuer = NULL;
+        x509_info->is_expired = -1;
+        x509_info->has_valid_signature = -1;
+        x509_info->is_revoked = -1;
+        x509_info->uid = NULL;
+        x509_info->authorized_keys_file = NULL;
+        x509_info->ssh_rsa = NULL;
+        x509_info->directory_online = -1;
+        x509_info->has_access = -1;
+    }
+}
+
+void percent_expand
+(char token, char *repl, char *src, char *dst, int dst_length)
+{
+    if (src != NULL && dst != NULL) {
+        bool cdt = 0;
+        int j = 0;
+        size_t strlen_repl = strlen(repl);
+        int i;
+        for (i = 0; (src[i] != '\0') && (j < dst_length - 1); i++) {
+            if (cdt) {
+                cdt = 0;
+                if (src[i] == token) {
+                    j--;
+                    /* replace token in dst buffer */
+                    int k;
+                    for (k = 0; (j < dst_length - 1) && (k < strlen_repl); k++) {
+                        dst[j++] = repl[k];
+                    }
+                    continue;
+                }
+            }
+            if (src[i] == '%') {
+                cdt = 1;
+            }
+            /* copy char to dst buffer */
+            dst[j++] = src[i];
+        }
+        dst[j] = '\0';
     }
 }
 
@@ -127,7 +158,7 @@ check_revocation(char *exchange_with_cert, char *is_revoked)
 }
 
 void
-extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa, cfg_t *cfg)
+extract_ssh_key(cfg_t *cfg, EVP_PKEY *pkey, char **ssh_rsa)
 {
     if (pkey == NULL) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "[-] extract_ssh_key(): pkey == NULL");

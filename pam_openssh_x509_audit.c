@@ -1,8 +1,3 @@
-/*
-author: sebastian roland
-date: 2013-06-10
-*/
-
 #include <stdlib.h>
 #include <syslog.h>
 
@@ -17,7 +12,8 @@ PAM_EXTERN int
 pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
     int rc;
-    struct pam_openssh_x509_info *x509_info;
+    struct pam_openssh_x509_info *x509_info = NULL;
+
     rc = pam_get_data(pamh, "x509_info", (const void **) &x509_info);
     if (rc == PAM_SUCCESS) {
         /* log information */
@@ -55,7 +51,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     return PAM_SUCCESS;
 
     auth_err:
-        return PAM_AUTH_ERR;
+    return PAM_AUTH_ERR;
 }
 
 PAM_EXTERN int
