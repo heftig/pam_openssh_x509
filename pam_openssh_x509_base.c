@@ -53,7 +53,6 @@ query_ldap(cfg_t *cfg)
     bool overflow = strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(x509_info->uid) + 1 <= SEARCH_FILTER_BUFFER_SIZE ? 0 : 1;
     if (overflow) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "[-] there is not enough space to hold filter in buffer");
-
         return;
     }
     char filter[SEARCH_FILTER_BUFFER_SIZE];
@@ -67,7 +66,6 @@ query_ldap(cfg_t *cfg)
         syslog(cfg_getint(cfg, "pam_log_facility"), "[+] ldap_initialize()");
     } else {
         syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_initialize(): '%s' (%d)", ldap_err2string(rc), rc);
-
         goto unbind_and_free_handle;
     }
 
@@ -75,7 +73,6 @@ query_ldap(cfg_t *cfg)
     rc = ldap_set_option(ldap_handle, LDAP_OPT_PROTOCOL_VERSION, &ldap_version);
     if (rc != LDAP_OPT_SUCCESS) {
         syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_set_option(): key: LDAP_OPT_PROTOCOL_VERSION, value: %i", ldap_version);
-
         goto unbind_and_free_handle;
     }
 
@@ -102,7 +99,6 @@ query_ldap(cfg_t *cfg)
              * so that we need to iterate over the result set instead of just retrieve and process the first message
              */
             for (ldap_result = ldap_first_message(ldap_handle, ldap_result); ldap_result != NULL; ldap_result = ldap_next_message(ldap_handle, ldap_result)) {
-
                 switch (msgtype = ldap_msgtype(ldap_result)) {
                     case LDAP_RES_SEARCH_ENTRY:
                         {
@@ -259,7 +255,6 @@ static int cfg_value_parser_lookup
 
     long int *ptr_result = result;
     *ptr_result = result_value;
-
     return 0;
 }
 
@@ -271,7 +266,6 @@ static int cfg_validate_ldap_uri
         cfg_error(cfg, "cfg_validate_ldap_uri(): option: '%s', value: '%s' (value is not an ldap uri)", cfg_opt_name(opt), ldap_uri);
         return -1;
     }
-
     return 0;
 }
 
@@ -283,33 +277,7 @@ static int cfg_validate_ldap_search_timeout
         cfg_error(cfg, "cfg_validate_ldap_search_timeout():  '%s', value: '%li' (value must be > 0)", cfg_opt_name(opt), timeout);
         return -1;
     }
-
     return 0;
-}
-
-static int cfg_validate_authorized_keys_file
-(cfg_t *cfg, cfg_opt_t *opt)
-{
-    char *path = cfg_opt_getnstr(opt, 0);
-    char *expanded_path = malloc(AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
-    if (expanded_path != NULL) {
-        percent_expand('u', x509_info->uid, path, expanded_path, AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
-        x509_info->authorized_keys_file = expanded_path;
-
-        /* check if file is read and writable */
-        FILE *access_test = fopen(x509_info->authorized_keys_file, "a+");
-        if (access_test != NULL) {
-                fclose(access_test);
-                return 0;
-        } else {
-            cfg_error(cfg, "cfg_validate_authorized_keys_file(): '%s' is not readable / writable", x509_info->authorized_keys_file);
-        }
-
-    } else {
-        cfg_error(cfg, "cfg_validate_authorized_keys_file(): malloc() failed");
-    }
-
-    return -1;
 }
 
 PAM_EXTERN int
@@ -319,9 +287,9 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     cfg_opt_t opts[] = { 
         CFG_INT_CB("pam_log_facility", config_lookup("LOG_LOCAL1"), CFGF_NONE, &cfg_value_parser_lookup),
         CFG_STR("ldap_uri", "ldap://localhost:389", CFGF_NONE),
-        CFG_STR("ldap_bind_dn", NULL, CFGF_NODEFAULT),
-        CFG_STR("ldap_pwd", NULL, CFGF_NODEFAULT),
-        CFG_STR("ldap_base", NULL, CFGF_NODEFAULT),
+        CFG_STR("ldap_bind_dn", "cn=directory_manager,dc=ssh,dc=hq", CFGF_NONE),
+        CFG_STR("ldap_pwd", "test123", CFGF_NONE),
+        CFG_STR("ldap_base", "ou=person,dc=ssh,dc=hq", CFGF_NONE),
         CFG_INT_CB("ldap_scope", config_lookup("LDAP_SCOPE_ONE"), CFGF_NONE, &cfg_value_parser_lookup),
         CFG_INT("ldap_search_timeout", 5, CFGF_NONE),
         CFG_INT_CB("ldap_version", config_lookup("LDAP_VERSION3"), CFGF_NONE, &cfg_value_parser_lookup),
@@ -344,7 +312,6 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     cfg_set_error_function(cfg, &cfg_error_handler);
     cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
     cfg_set_validate_func(cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
-    cfg_set_validate_func(cfg, "authorized_keys_file", &cfg_validate_authorized_keys_file);
 
     /* first argument must be path to config file */
     if (argc != 1) {
@@ -352,15 +319,18 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         goto auth_err;
     }
 
-    /*
-     * initialize data transfer object
-     *
-     * the validation of the authorized_keys_file config option needs the uid of the
-     * connecting user. in order to not call pam_get_user() more than once the data
-     * transfer object will be initialized before parsing the config file.
-     * the uid will be put there so that the validation callback can access it then
-     *
-     */
+    /* parse config */
+    switch (cfg_parse(cfg, argv[0]))
+    {
+        case CFG_SUCCESS:
+            break;
+        case CFG_FILE_ERROR:
+            cfg_error(cfg, "cfg_parse(): file: '%s', '%s'", argv[0], strerror(errno));
+        case CFG_PARSE_ERROR:
+            goto auth_err;
+    }
+
+    /* initialize data transfer object */
     x509_info = malloc(sizeof(*x509_info));
     if (x509_info != NULL) {
         init_data_transfer_object(x509_info);
@@ -415,17 +385,23 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         goto auth_err;
     }
 
-    /* parse config */
-    switch (cfg_parse(cfg, argv[0]))
-    {
-        case CFG_SUCCESS:
-            break;
+    /* expand authorized_keys_file option and add to data transfer object */
+    char *expanded_path = malloc(AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
+    if (expanded_path != NULL) {
+        percent_expand('u', x509_info->uid, cfg_getstr(cfg, "authorized_keys_file"), expanded_path, AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
+        x509_info->authorized_keys_file = expanded_path;
+    } else {
+        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] malloc() failed");
+        goto auth_err;
+    }
 
-        case CFG_FILE_ERROR:
-            cfg_error(cfg, "cfg_parse(): file: '%s', '%s'", argv[0], strerror(errno));
-
-        case CFG_PARSE_ERROR:
-            goto auth_err;
+    /* make sure file is readable / writable */
+    FILE *access_test = fopen(x509_info->authorized_keys_file, "a+");
+    if (access_test != NULL) {
+        fclose(access_test);
+    } else {
+        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] '%s' is not readable / writable", x509_info->authorized_keys_file);
+        goto auth_err;
     }
 
     /*
@@ -433,14 +409,13 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
      *
      */
     query_ldap(cfg);
-
+    
     return PAM_SUCCESS;
 
     auth_err:
 	    // free config
         cfg_free_value(opts);
         cfg_free(cfg);
-
         return PAM_AUTH_ERR;
 }
 

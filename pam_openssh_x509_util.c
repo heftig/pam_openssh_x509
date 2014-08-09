@@ -88,10 +88,30 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
     }
 }
 
+/*
+ * CAUTION!
+ *
+ * before calling percent_expand() make sure that you filter values
+ * that can lead to unwanted behavior.
+ *
+ * for example if the substitution value for the token can be chosen
+ * by an attacker and the function is used for replacing tokens in a
+ * path.
+ *
+ * consider the following example:
+ * path: /etc/ssh/keystore/%u/authorized_keys
+ *
+ * an attacker could change the path easily if he provides the following:
+ * substitution value: ../../../root/.ssh 
+ *
+ * that would lead to the following path:
+ * /etc/ssh/keystore/../../../root/.ssh/authorized_keys
+ *
+ */
 void percent_expand
 (char token, char *subst, char *src, char *dst, int dst_length)
 {
-    if (src != NULL && dst != NULL) {
+    if (subst != NULL && src != NULL && dst != NULL) {
         bool cdt = 0;
         int j = 0;
         size_t strlen_subst = strlen(subst);
