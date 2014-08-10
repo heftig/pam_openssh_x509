@@ -14,13 +14,21 @@
 #include <openssl/x509.h>
 #include <confuse.h>
 
-#define PUT_32BIT(cp, value) ( \
+/* macros */
+#define __INTERNAL_LOG(P, ...)  syslog(log_facility, P __VA_ARGS__)
+#define LOG_SUCCESS(...)        __INTERNAL_LOG("[+] ", __VA_ARGS__)
+#define LOG_FAIL(...)           __INTERNAL_LOG("[-] ", __VA_ARGS__)
+#define LOG_MSG(...)            __INTERNAL_LOG("[#] ", __VA_ARGS__)
+
+#define PUT_32BIT(cp, value)( \
     (cp)[0] = (unsigned char)((value) >> 24), \
     (cp)[1] = (unsigned char)((value) >> 16), \
     (cp)[2] = (unsigned char)((value) >> 8), \
     (cp)[3] = (unsigned char)(value) )
 
 /* type declarations */
+extern int log_facility;
+
 struct __config_lookup_table {
     char *name;
     int value;
@@ -55,5 +63,4 @@ void check_signature(char *exchange_with_cert, char *has_valid_signature);
 void check_expiration(char *exchange_with_cert, char *is_expired);
 void check_revocation(char *exchange_with_cert, char *is_revoked);
 void extract_ssh_key(cfg_t *cfg, EVP_PKEY *pkey, char **ssh_rsa);
-
 #endif

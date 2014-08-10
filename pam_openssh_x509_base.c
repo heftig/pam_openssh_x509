@@ -22,6 +22,7 @@
 #define UID_BUFFER_SIZE                     33
 #define AUTHORIZED_KEYS_FILE_BUFFER_SIZE    1024
 
+int log_facility;
 static struct pam_openssh_x509_info *x509_info;
 
 static void
@@ -29,7 +30,6 @@ cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
 {
     // THIS FUNCTION SHOULD BE CALLED THROUGH PAM_END() WHICH UNFORTUNATELY IS NOT HAPPENING FOR OPENSSH
     // TODO: USE IF SUPPORTED
-    //syslog(log_prio, "callback touched");
 }
 
 static void
@@ -193,7 +193,7 @@ query_ldap(cfg_t *cfg)
 
                     case LDAP_RES_SEARCH_RESULT:
                         {
-                            /* handle results here */
+                            /* handle result here */
                             int error_code;
                             char *error_msg = NULL;
                             rc = ldap_parse_result(ldap_handle, ldap_result, &error_code, NULL, &error_msg, NULL, NULL, 0);
@@ -264,7 +264,11 @@ static int cfg_value_parser_lookup
     if (result_value == -EINVAL) {
         cfg_error(cfg, "cfg_value_parser_int(): option: '%s', value: '%s'", cfg_opt_name(opt), value);
         return -1; 
-    }   
+    }
+    /* set global log facility var if value of pam_log_facility option changes */
+    if (strcmp("pam_log_facility", cfg_opt_name(opt)) == 0) {
+        log_facility = result_value;
+    }
 
     long int *ptr_result = result;
     *ptr_result = result_value;
@@ -314,10 +318,10 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     }; 
 
     /*
-     * initalizing config
+     * initalize config
      *
-     * default values will be initialized. after it we can log. syslog facility will be the
-     * default value specified above
+     * default values will be available after to the application so that we can set
+     * the global log_facility var making logging possible
      *
      */
     cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
@@ -325,6 +329,9 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     cfg_set_error_function(cfg, &cfg_error_handler);
     cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
     cfg_set_validate_func(cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
+
+    /* set global log_facility var. logging is now possible */
+    log_facility = cfg_getint(cfg, "pam_log_facility");
 
     /* first argument must be path to config file */
     if (argc != 1) {
