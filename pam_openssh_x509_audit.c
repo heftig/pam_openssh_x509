@@ -6,7 +6,7 @@
 
 #include "include/pam_openssh_x509.h"
 
-struct pam_openssh_x509_info *x509_info = NULL;
+static struct pam_openssh_x509_info *x509_info = NULL;
 static char *unset = "unset";
 
 static void
