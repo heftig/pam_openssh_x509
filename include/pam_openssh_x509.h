@@ -15,7 +15,13 @@
 #include <confuse.h>
 
 /* macros */
-#define __INTERNAL_LOG(P, ...)  syslog(log_facility, P __VA_ARGS__)
+#define __LOG_FACILITY          LOG_LOCAL1
+#define __INTERNAL_LOG(P, ...)  if (x509_info != NULL) { \
+                                    syslog(x509_info->log_facility, P __VA_ARGS__); \
+                                } else { \
+                                    syslog(__LOG_FACILITY, P __VA_ARGS__); \
+                                }
+
 #define LOG_SUCCESS(...)        __INTERNAL_LOG("[+] ", __VA_ARGS__)
 #define LOG_FAIL(...)           __INTERNAL_LOG("[-] ", __VA_ARGS__)
 #define LOG_MSG(...)            __INTERNAL_LOG("[#] ", __VA_ARGS__)
@@ -27,8 +33,6 @@
     (cp)[3] = (unsigned char)(value) )
 
 /* type declarations */
-extern int log_facility;
-
 struct __config_lookup_table {
     char *name;
     int value;
@@ -49,9 +53,10 @@ struct pam_openssh_x509_info {
     char *authorized_keys_file;
     char *ssh_rsa;
 
-    /* additional */
+    /* misc */
     char directory_online;
     char has_access;
+    int log_facility;
 };
 
 /* function declarations */

@@ -1,3 +1,6 @@
+#include <syslog.h>
+#include <ldap.h>
+
 #include "include/pam_openssh_x509.h"
 
 static const char *own_fqdn = "test.ssh.hq";
@@ -5,39 +8,39 @@ static const char *own_fqdn = "test.ssh.hq";
 static struct __config_lookup_table _config_lookup[] =
     {
         // syslog facilities
-        { "LOG_KERN", (0<<3) },
-        { "LOG_USER", (1<<3) },
-        { "LOG_MAIL", (2<<3) },
-        { "LOG_DAEMON", (3<<3) },
-        { "LOG_AUTH", (4<<3) },
-        { "LOG_SYSLOG", (5<<3) },
-        { "LOG_LPR", (6<<3) },
-        { "LOG_NEWS", (7<<3) },
-        { "LOG_UUCP", (8<<3) },
-        { "LOG_CRON", (9<<3) },
-        { "LOG_AUTHPRIV", (10<<3) },
-        { "LOG_FTP", (11<<3) },
-        { "LOG_LOCAL0", (16<<3) },
-        { "LOG_LOCAL1", (17<<3) },
-        { "LOG_LOCAL2", (18<<3) },
-        { "LOG_LOCAL3", (19<<3) },
-        { "LOG_LOCAL4", (20<<3) },
-        { "LOG_LOCAL5", (21<<3) },
-        { "LOG_LOCAL6", (22<<3) },
-        { "LOG_LOCAL7", (23<<3) },
+        { "LOG_KERN", LOG_KERN },
+        { "LOG_USER", LOG_USER },
+        { "LOG_MAIL", LOG_MAIL },
+        { "LOG_DAEMON", LOG_DAEMON },
+        { "LOG_AUTH", LOG_AUTH },
+        { "LOG_SYSLOG", LOG_SYSLOG },
+        { "LOG_LPR", LOG_LPR },
+        { "LOG_NEWS", LOG_NEWS },
+        { "LOG_UUCP", LOG_UUCP },
+        { "LOG_CRON", LOG_CRON },
+        { "LOG_AUTHPRIV", LOG_AUTHPRIV },
+        { "LOG_FTP", LOG_FTP },
+        { "LOG_LOCAL0", LOG_LOCAL0 },
+        { "LOG_LOCAL1", LOG_LOCAL1 },
+        { "LOG_LOCAL2", LOG_LOCAL2 },
+        { "LOG_LOCAL3", LOG_LOCAL3 },
+        { "LOG_LOCAL4", LOG_LOCAL4 },
+        { "LOG_LOCAL5", LOG_LOCAL5 },
+        { "LOG_LOCAL6", LOG_LOCAL6 },
+        { "LOG_LOCAL7", LOG_LOCAL6 },
 
         // libldap
-        { "LDAP_VERSION1", 1 },
-        { "LDAP_VERSION2", 2 },
-        { "LDAP_VERSION3", 3 },
-        { "LDAP_SCOPE_BASE", 0 },
-        { "LDAP_SCOPE_BASEOBJECT", 0 },
-        { "LDAP_SCOPE_ONELEVEL", 1 },
-        { "LDAP_SCOPE_ONE", 1 },
-        { "LDAP_SCOPE_SUBTREE", 2 },
-        { "LDAP_SCOPE_SUB", 2 },
-        { "LDAP_SCOPE_SUBORDINATE", 3 },
-        { "LDAP_SCOPE_CHILDREN", 3 },
+        { "LDAP_VERSION1", LDAP_VERSION1 },
+        { "LDAP_VERSION2", LDAP_VERSION2 },
+        { "LDAP_VERSION3", LDAP_VERSION3 },
+        { "LDAP_SCOPE_BASE", LDAP_SCOPE_BASE },
+        { "LDAP_SCOPE_BASEOBJECT", LDAP_SCOPE_BASEOBJECT },
+        { "LDAP_SCOPE_ONELEVEL", LDAP_SCOPE_ONELEVEL },
+        { "LDAP_SCOPE_ONE", LDAP_SCOPE_ONE },
+        { "LDAP_SCOPE_SUBTREE", LDAP_SCOPE_SUBTREE },
+        { "LDAP_SCOPE_SUB", LDAP_SCOPE_SUB },
+        { "LDAP_SCOPE_SUBORDINATE", LDAP_SCOPE_SUBORDINATE },
+        { "LDAP_SCOPE_CHILDREN", LDAP_SCOPE_CHILDREN },
 
         // mark end
         { NULL, 0 }
@@ -73,18 +76,19 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
         /* set standard values */
         memset(x509_info, 0, sizeof(*x509_info));
 
-        x509_info->has_cert = -1;
+        x509_info->has_cert = 0x86;
         x509_info->subject = NULL;
         x509_info->serial = NULL;
         x509_info->issuer = NULL;
-        x509_info->is_expired = -1;
-        x509_info->has_valid_signature = -1;
-        x509_info->is_revoked = -1;
+        x509_info->is_expired = 0x86;
+        x509_info->has_valid_signature = 0x86;
+        x509_info->is_revoked = 0x86;
         x509_info->uid = NULL;
         x509_info->authorized_keys_file = NULL;
         x509_info->ssh_rsa = NULL;
-        x509_info->directory_online = -1;
-        x509_info->has_access = -1;
+        x509_info->directory_online = 0x86;
+        x509_info->has_access = 0x86;
+        x509_info->log_facility = __LOG_FACILITY;
     }
 }
 

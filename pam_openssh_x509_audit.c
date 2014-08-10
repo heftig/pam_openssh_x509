@@ -6,52 +6,75 @@
 
 #include "include/pam_openssh_x509.h"
 
-static int log_prio = LOG_DEBUG | LOG_LOCAL1;
+struct pam_openssh_x509_info *x509_info = NULL;
+static char *unset = "unset";
+
+static void
+log_string(char *attr, char *value)
+{
+    if (attr == NULL) {
+        return;
+    }
+    if (value == NULL) {
+        value = unset;
+    }
+    LOG_MSG("%s: %s", attr, value);
+}
+
+static void
+log_char(char *attr, char value)
+{
+    if (attr == NULL) {
+        return;
+    }
+    char *value_string = NULL;
+    if (value == 0x86) {
+        value_string = unset;
+    } else {
+        if (value == 1) {
+            value_string = "true";
+        } else {
+            value_string = "false";
+        }
+    }
+    LOG_MSG("%s: %s", attr, value_string);
+}
 
 PAM_EXTERN int
 pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-    int rc;
-    struct pam_openssh_x509_info *x509_info = NULL;
-
-    rc = pam_get_data(pamh, "x509_info", (const void **) &x509_info);
+    int rc = pam_get_data(pamh, "x509_info", (const void **) &x509_info);
     if (rc == PAM_SUCCESS) {
-        /* log information */
-        syslog(log_prio, "===================================================");
-        syslog(log_prio, "has_cert: %d", x509_info->has_cert);
+        LOG_MSG("===================================================");
+        log_string("uid", x509_info->uid);
+        log_string("auth_keys_file", x509_info->authorized_keys_file);
+        log_string("ssh_rsa", x509_info->ssh_rsa);
+        LOG_MSG("");
+        log_char("has_cert", x509_info->has_cert);
+        log_string("serial", x509_info->serial);
+        log_string("issuer", x509_info->issuer);
+        log_string("subject", x509_info->subject);
+        log_char("has_valid_sig", x509_info->has_valid_signature);
+        log_char("is_expired", x509_info->is_expired);
+        log_char("is_revoked", x509_info->is_revoked);
+        LOG_MSG("");
+        log_char("is_directory_online", x509_info->directory_online);
+        log_char("has_access", x509_info->has_access);
+        LOG_MSG("===================================================");
         
-        if (x509_info->subject != NULL)
-            syslog(log_prio, "subject: %s", x509_info->subject);
+    } else if (rc == PAM_SYSTEM_ERR) {
+        LOG_FAIL("pam_get_data(): pamh == NULL");
+        goto auth_err;
 
-        if (x509_info->serial != NULL)
-            syslog(log_prio, "serial: %s", x509_info->serial);
-
-        if (x509_info->issuer != NULL)
-            syslog(log_prio, "issuer: %s", x509_info->issuer);
-
-        syslog(log_prio, "is_expired: %d", x509_info->is_expired);
-        syslog(log_prio, "has_valid_sig: %d", x509_info->has_valid_signature);
-        syslog(log_prio, "is_revoked: %d", x509_info->is_revoked);
-
-        if (x509_info->ssh_rsa != NULL)
-            syslog(log_prio, "ssh-rsa: %s", x509_info->ssh_rsa);
-
-        if (x509_info->authorized_keys_file != NULL) 
-            syslog(log_prio, "auth_keys_file: %s", x509_info->authorized_keys_file);
-
-        syslog(log_prio, "directory_online: %d", x509_info->directory_online);
-        syslog(log_prio, "has_access: %d", x509_info->has_access);
-        syslog(log_prio, "===================================================");
-        
-    } else {
-        syslog(log_prio, "error: pam_get_data()");
+    } else if (rc == PAM_NO_MODULE_DATA) {
+        LOG_FAIL("pam_get_data(): module data not found or entry is NULL");
         goto auth_err;
     }
 
     return PAM_SUCCESS;
 
     auth_err:
-    return PAM_AUTH_ERR;
+        return PAM_AUTH_ERR;
 }
 
 PAM_EXTERN int

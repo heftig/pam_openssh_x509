@@ -22,8 +22,7 @@
 #define UID_BUFFER_SIZE                     33
 #define AUTHORIZED_KEYS_FILE_BUFFER_SIZE    1024
 
-int log_facility;
-static struct pam_openssh_x509_info *x509_info;
+static struct pam_openssh_x509_info *x509_info = NULL;
 
 static void
 cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
@@ -255,7 +254,7 @@ static void cfg_error_handler
 }
 
 /*
- * note that parsing and validation callback functions will only be called
+ * note that value parsing and validation callback functions will only be called
  * during parsing. altering the value later wont incorporate them
  */
 static int cfg_value_parser_lookup
@@ -266,9 +265,9 @@ static int cfg_value_parser_lookup
         cfg_error(cfg, "cfg_value_parser_int(): option: '%s', value: '%s'", cfg_opt_name(opt), value);
         return -1; 
     }
-    /* reset the global log facility var */
+    /* reset log_facility var */
     if (strcmp("pam_log_facility", cfg_opt_name(opt)) == 0) {
-        log_facility = result_value;
+        x509_info->log_facility = result_value;
     }
 
     long int *ptr_result = result;
@@ -301,9 +300,18 @@ static int cfg_validate_ldap_search_timeout
 PAM_EXTERN int
 pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
+    /* initialize data transfer object */
+    x509_info = malloc(sizeof(*x509_info));
+    if (x509_info != NULL) {
+        init_data_transfer_object(x509_info);
+    } else {
+        LOG_FAIL("init of data transfer object failed");
+        goto auth_err;
+    }
+
     /* setup config options */
     cfg_opt_t opts[] = { 
-        CFG_INT_CB("pam_log_facility", config_lookup("LOG_LOCAL1"), CFGF_NONE, &cfg_value_parser_lookup),
+        CFG_INT_CB("pam_log_facility", 0, CFGF_NODEFAULT, &cfg_value_parser_lookup),
         CFG_STR("ldap_uri", "ldap://localhost:389", CFGF_NONE),
         CFG_STR("ldap_bind_dn", "cn=directory_manager,dc=ssh,dc=hq", CFGF_NONE),
         CFG_STR("ldap_pwd", "test123", CFGF_NONE),
@@ -318,20 +326,12 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         CFG_END()
     }; 
 
-    /*
-     * initalize config
-     *
-     * default values will be available after to the application so that we can set
-     * the global log_facility var making logging possible
-     */
+    /* initalize config */
     cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
     /* register callbacks */
     cfg_set_error_function(cfg, &cfg_error_handler);
     cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
     cfg_set_validate_func(cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
-
-    /* set global log_facility var. logging is now possible */
-    log_facility = cfg_getint(cfg, "pam_log_facility");
 
     /* first argument must be path to config file */
     if (argc != 1) {
@@ -350,16 +350,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
             goto auth_err;
     }
 
-    /* initialize data transfer object */
-    x509_info = malloc(sizeof(*x509_info));
-    if (x509_info != NULL) {
-        init_data_transfer_object(x509_info);
-    } else {
-        LOG_FAIL("init of data transfer object failed");
-        goto auth_err;
-    }
-
-    /* make data transfer object available for module stack */
+    /* make data transfer object available to module stack */
     int rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
     if (rc != PAM_SUCCESS) {
         LOG_FAIL("pam_set_data()");
