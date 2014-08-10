@@ -52,7 +52,7 @@ query_ldap(cfg_t *cfg)
     /* check length of search filter buffer */
     unsigned int search_filter_buffer = strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(x509_info->uid) + 1;
     if (search_filter_buffer > MAX_SEARCH_FILTER_BUFFER_SIZE) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] size of ldap search filter buffer exceeds maximum allowed size");
+        LOG_FAIL("size of ldap search filter buffer exceeds maximum allowed size");
         return;
     }
     /* construct filter */
@@ -64,16 +64,16 @@ query_ldap(cfg_t *cfg)
     /* init handle */
     rc = ldap_initialize(&ldap_handle, cfg_getstr(cfg, "ldap_uri"));
     if (rc == LDAP_SUCCESS) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[+] ldap_initialize()");
+        LOG_SUCCESS("ldap_initialize()");
     } else {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_initialize(): '%s' (%d)", ldap_err2string(rc), rc);
+        LOG_FAIL("ldap_initialize(): '%s' (%d)", ldap_err2string(rc), rc);
         goto unbind_and_free_handle;
     }
 
     /* set version */
     rc = ldap_set_option(ldap_handle, LDAP_OPT_PROTOCOL_VERSION, &ldap_version);
     if (rc != LDAP_OPT_SUCCESS) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_set_option(): key: LDAP_OPT_PROTOCOL_VERSION, value: %i", ldap_version);
+        LOG_FAIL("ldap_set_option(): key: LDAP_OPT_PROTOCOL_VERSION, value: %i", ldap_version);
         goto unbind_and_free_handle;
     }
 
@@ -83,7 +83,7 @@ query_ldap(cfg_t *cfg)
 
     if (rc == LDAP_SUCCESS) {
         /* connection established */
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[+] ldap_sasl_bind_s()");
+        LOG_SUCCESS("ldap_sasl_bind_s()");
         x509_info->directory_online = 1;
 
         /*
@@ -91,7 +91,7 @@ query_ldap(cfg_t *cfg)
          */
         rc = ldap_search_ext_s(ldap_handle, cfg_getstr(cfg, "ldap_base"), cfg_getint(cfg, "ldap_scope"), filter, attrs, 0, NULL, NULL, &search_timeout, sizelimit, &ldap_result);
         if (rc == LDAP_SUCCESS) {
-            syslog(cfg_getint(cfg, "pam_log_facility"), "[+] ldap_search_ext_s()");
+            LOG_SUCCESS("ldap_search_ext_s()");
             /*
              * iterate over matching entries
              *
@@ -103,7 +103,7 @@ query_ldap(cfg_t *cfg)
                     case LDAP_RES_SEARCH_ENTRY:
                         {
                             char *entry_dn = ldap_get_dn(ldap_handle, ldap_result); 
-                            syslog(cfg_getint(cfg, "pam_log_facility"), "[#] dn: %s\n", entry_dn);
+                            LOG_MSG("dn: %s\n", entry_dn);
                             /*
                              * iterate over all requested attributes
                              */
@@ -115,7 +115,6 @@ query_ldap(cfg_t *cfg)
                                  *
                                  * result of ldap_get_values_len() is an array in order to handle
                                  * mutivalued attributes
-                                 *
                                  */
                                 if ((bvals = ldap_get_values_len(ldap_handle, ldap_result, attr)) != NULL) {
                                     int i;
@@ -147,7 +146,7 @@ query_ldap(cfg_t *cfg)
                                             x509 = d2i_X509(NULL, (const unsigned char **) &value, len);
 
                                             if (x509 == NULL) {
-                                                syslog(cfg_getint(cfg, "pam_log_facility"), "[-] d2i_X509(): cannot decode certificate");
+                                                LOG_FAIL("d2i_X509(): cannot decode certificate");
                                                 /* try next certificate if existing */
                                                 continue;
                                             }
@@ -167,13 +166,13 @@ query_ldap(cfg_t *cfg)
 
                                         } else {
                                             /* should be impossible */
-                                            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] unhandled (not requested) attribute: '%s'", attr);
+                                            LOG_FAIL("unhandled (not requested) attribute: '%s'", attr);
                                         }
                                     }
 
                                 } else {
                                     /* unlikely */
-                                    syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_get_values_len()");
+                                    LOG_FAIL("ldap_get_values_len()");
                                 }
                                 /* free values structure after each iteration */
                                 ldap_value_free_len(bvals);
@@ -185,9 +184,8 @@ query_ldap(cfg_t *cfg)
 
                     case LDAP_RES_SEARCH_REFERENCE:
                         {
-                            /* handle references here */
-                            /* TODO: entry could be a reference. should be able to handle that */
-                            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] unhandled msgtype '(0x%x)'\n", msgtype);
+                            /* TODO: handle references here */
+                            LOG_FAIL("unhandled msgtype '(0x%x)'\n", msgtype);
                             break;
                         }
 
@@ -199,10 +197,10 @@ query_ldap(cfg_t *cfg)
                             rc = ldap_parse_result(ldap_handle, ldap_result, &error_code, NULL, &error_msg, NULL, NULL, 0);
                             if (rc == LDAP_SUCCESS) {
                                 if (error_code != LDAP_SUCCESS) {
-                                    syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_parse_result(): '%s' (%i)", ldap_err2string(error_code), error_code);
+                                    LOG_FAIL("ldap_parse_result(): '%s' (%i)", ldap_err2string(error_code), error_code);
                                 }
                                 if (error_msg != NULL) {
-                                    syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_parse_result(): '%s'", error_msg);
+                                    LOG_FAIL("ldap_parse_result(): '%s'", error_msg);
                                     ldap_memfree(error_msg);
                                 }
                             }
@@ -212,14 +210,14 @@ query_ldap(cfg_t *cfg)
                     default:
                         {
                             /* unlikely */
-                            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] undefined msgtype '(0x%x)'\n", msgtype);
+                            LOG_FAIL("undefined msgtype '(0x%x)'\n", msgtype);
                         }
                 }
             }
 
         } else {
             /* ldap_search_ext_s() error */
-            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_search_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
+            LOG_FAIL("ldap_search_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
         }
         /* clear result structure - even if no result has been found (see man page) */
         ldap_msgfree(ldap_result);
@@ -227,7 +225,7 @@ query_ldap(cfg_t *cfg)
     } else {
         /* bind not successful */
         x509_info->directory_online = 0;
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_sasl_bind_s(): '%s' (%d)", ldap_err2string(rc), rc);
+        LOG_FAIL("ldap_sasl_bind_s(): '%s' (%d)", ldap_err2string(rc), rc);
     }
 
     unbind_and_free_handle:
@@ -237,14 +235,13 @@ query_ldap(cfg_t *cfg)
          * it is important to unbind also when the bind has actually failed because
          * else the ldap_handle structure that has been initialized before would
          * never be freed leading to a memory leak
-         *
          */
         if (ldap_handle != NULL) {
             rc = ldap_unbind_ext_s(ldap_handle, NULL, NULL);
             if (rc == LDAP_SUCCESS) {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "[+] ldap_unbind_ext_s()");
+                LOG_SUCCESS("ldap_unbind_ext_s()");
             } else {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_unbind_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
+                LOG_FAIL("ldap_unbind_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
             }
         }
 }
@@ -254,9 +251,13 @@ static void cfg_error_handler
 {
     char error_msg[1024];
     vsnprintf(error_msg, sizeof(error_msg), fmt, ap);
-    syslog(cfg_getint(cfg, "pam_log_facility"), "[-] %s\n", error_msg);
+    LOG_FAIL("%s", error_msg);
 }
 
+/*
+ * note that parsing and validation callback functions will only be called
+ * during parsing. altering the value later wont incorporate them
+ */
 static int cfg_value_parser_lookup
 (cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result) 
 {
@@ -265,7 +266,7 @@ static int cfg_value_parser_lookup
         cfg_error(cfg, "cfg_value_parser_int(): option: '%s', value: '%s'", cfg_opt_name(opt), value);
         return -1; 
     }
-    /* set global log facility var if value of pam_log_facility option changes */
+    /* reset the global log facility var */
     if (strcmp("pam_log_facility", cfg_opt_name(opt)) == 0) {
         log_facility = result_value;
     }
@@ -322,7 +323,6 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
      *
      * default values will be available after to the application so that we can set
      * the global log_facility var making logging possible
-     *
      */
     cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
     /* register callbacks */
@@ -335,7 +335,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 
     /* first argument must be path to config file */
     if (argc != 1) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] arg count != 1");
+        LOG_FAIL("arg count != 1");
         goto auth_err;
     }
 
@@ -355,14 +355,14 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     if (x509_info != NULL) {
         init_data_transfer_object(x509_info);
     } else {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] init of data transfer object failed");
+        LOG_FAIL("init of data transfer object failed");
         goto auth_err;
     }
 
     /* make data transfer object available for module stack */
     int rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
     if (rc != PAM_SUCCESS) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] pam_set_data()");
+        LOG_FAIL("pam_set_data()");
         goto auth_err;
     }
 
@@ -374,11 +374,10 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
          * make uid available in data transfer object. do not point to value in
          * pam space because if we free our data structure we would free it from
          * global pam space as well. other modules could rely on it
-         *
          */
         x509_info->uid = strndup(uid, UID_BUFFER_SIZE);
         if (x509_info->uid == NULL) {
-            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] strndup()");
+            LOG_FAIL("strndup()");
             goto auth_err;
         }
         /*
@@ -392,16 +391,16 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         pwd = getpwnam(x509_info->uid);
 
         if (pwd == NULL) {
-            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] user '%s' has no local account", x509_info->uid);
+            LOG_FAIL("user '%s' has no local account", x509_info->uid);
             goto auth_err;
         }
 
     } else if (rc == PAM_SYSTEM_ERR) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] pam_get_user(): (%i)", rc);
+        LOG_FAIL("pam_get_user(): (%i)", rc);
         goto auth_err;
 
     } else if (rc == PAM_CONV_ERR) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] pam_get_user(): (%i)", rc);
+        LOG_FAIL("pam_get_user(): (%i)", rc);
         goto auth_err;
     }
 
@@ -411,7 +410,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         percent_expand('u', x509_info->uid, cfg_getstr(cfg, "authorized_keys_file"), expanded_path, AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
         x509_info->authorized_keys_file = expanded_path;
     } else {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] malloc() failed");
+        LOG_FAIL("malloc() failed");
         goto auth_err;
     }
 
@@ -420,13 +419,12 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     if (access_test != NULL) {
         fclose(access_test);
     } else {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] '%s' is not readable / writable", x509_info->authorized_keys_file);
+        LOG_FAIL("'%s' is not readable / writable", x509_info->authorized_keys_file);
         goto auth_err;
     }
 
     /*
      * query ldap server and retrieve access permission and certificate of user
-     *
      */
     query_ldap(cfg);
     
