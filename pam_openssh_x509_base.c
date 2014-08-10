@@ -17,7 +17,7 @@
 
 #include "include/pam_openssh_x509.h"
 
-#define SEARCH_FILTER_BUFFER_SIZE           1024
+#define MAX_SEARCH_FILTER_BUFFER_SIZE       512
 #define CERT_INFO_STRING_BUFFER_SIZE        1024
 #define UID_BUFFER_SIZE                     33
 #define AUTHORIZED_KEYS_FILE_BUFFER_SIZE    1024
@@ -49,13 +49,14 @@ query_ldap(cfg_t *cfg)
     char *attrs[] = { cfg_getstr(cfg, "ldap_attr_cert"), cfg_getstr(cfg, "ldap_attr_access"), '\0' };
     struct berval cred = { strlen(cfg_getstr(cfg, "ldap_pwd")), cfg_getstr(cfg, "ldap_pwd") };
 
-    /* construct filter */
-    bool overflow = strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(x509_info->uid) + 1 <= SEARCH_FILTER_BUFFER_SIZE ? 0 : 1;
-    if (overflow) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] there is not enough space to hold filter in buffer");
+    /* check length of search filter buffer */
+    unsigned int search_filter_buffer = strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(x509_info->uid) + 1;
+    if (search_filter_buffer > MAX_SEARCH_FILTER_BUFFER_SIZE) {
+        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] size of ldap search filter buffer exceeds maximum allowed size");
         return;
     }
-    char filter[SEARCH_FILTER_BUFFER_SIZE];
+    /* construct filter */
+    char filter[search_filter_buffer];
     strcpy(filter, cfg_getstr(cfg, "ldap_attr_rdn_person"));
     strcat(filter, "=");
     strcat(filter, x509_info->uid);
@@ -91,7 +92,6 @@ query_ldap(cfg_t *cfg)
         rc = ldap_search_ext_s(ldap_handle, cfg_getstr(cfg, "ldap_base"), cfg_getint(cfg, "ldap_scope"), filter, attrs, 0, NULL, NULL, &search_timeout, sizelimit, &ldap_result);
         if (rc == LDAP_SUCCESS) {
             syslog(cfg_getint(cfg, "pam_log_facility"), "[+] ldap_search_ext_s()");
-            
             /*
              * iterate over matching entries
              *
@@ -104,7 +104,6 @@ query_ldap(cfg_t *cfg)
                         {
                             char *entry_dn = ldap_get_dn(ldap_handle, ldap_result); 
                             syslog(cfg_getint(cfg, "pam_log_facility"), "[#] dn: %s\n", entry_dn);
-
                             /*
                              * iterate over all requested attributes
                              */
@@ -112,8 +111,11 @@ query_ldap(cfg_t *cfg)
                                 bool is_attr_access = strcmp(attr, cfg_getstr(cfg, "ldap_attr_access")) == 0 ? 1 : 0;
                                 bool is_attr_cert = strcmp(attr, cfg_getstr(cfg, "ldap_attr_cert")) == 0 ? 1 : 0;
                                 /*
+                                 * iterate over all values for attribute
+                                 *
                                  * result of ldap_get_values_len() is an array in order to handle
                                  * mutivalued attributes
+                                 *
                                  */
                                 if ((bvals = ldap_get_values_len(ldap_handle, ldap_result, attr)) != NULL) {
                                     int i;
@@ -192,8 +194,18 @@ query_ldap(cfg_t *cfg)
                     case LDAP_RES_SEARCH_RESULT:
                         {
                             /* handle results here */
-                            /* TODO: last message is always of type LDAP_RES_SEARCH_RESULT. Analyse what can be done with it */
-                            syslog(cfg_getint(cfg, "pam_log_facility"), "[-] unhandled msgtype '(0x%x)'\n", msgtype);
+                            int error_code;
+                            char *error_msg = NULL;
+                            rc = ldap_parse_result(ldap_handle, ldap_result, &error_code, NULL, &error_msg, NULL, NULL, 0);
+                            if (rc == LDAP_SUCCESS) {
+                                if (error_code != LDAP_SUCCESS) {
+                                    syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_parse_result(): '%s' (%i)", ldap_err2string(error_code), error_code);
+                                }
+                                if (error_msg != NULL) {
+                                    syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_parse_result(): '%s'", error_msg);
+                                    ldap_memfree(error_msg);
+                                }
+                            }
                             break;
                         }
 
@@ -204,6 +216,7 @@ query_ldap(cfg_t *cfg)
                         }
                 }
             }
+
         } else {
             /* ldap_search_ext_s() error */
             syslog(cfg_getint(cfg, "pam_log_facility"), "[-] ldap_search_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
