@@ -350,16 +350,9 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
             goto auth_err;
     }
 
-    /* make data transfer object available to module stack */
-    int rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
-    if (rc != PAM_SUCCESS) {
-        LOG_FAIL("pam_set_data()");
-        goto auth_err;
-    }
-
     /* retrieve uid and check for local account */
     const char *uid = NULL;
-    rc = pam_get_user(pamh, &uid, NULL);
+    int rc = pam_get_user(pamh, &uid, NULL);
     if (rc == PAM_SUCCESS) {
         /*
          * make uid available in data transfer object. do not point to value in
@@ -419,6 +412,13 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
      */
     query_ldap(cfg);
     
+    /* make data transfer object available to module stack */
+    rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
+    if (rc != PAM_SUCCESS) {
+        LOG_FAIL("pam_set_data()");
+        goto auth_err;
+    }
+
     return PAM_SUCCESS;
 
     auth_err:
