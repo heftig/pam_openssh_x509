@@ -66,7 +66,8 @@ config_lookup(const char *key)
     return -EINVAL;
 }
 
-static void __LOG(char *prefix, const char *fmt, va_list ap)
+static void
+__LOG(char *prefix, const char *fmt, va_list ap)
 {
     char buffer[LOG_BUFFER_SIZE];
     vsnprintf(buffer, LOG_BUFFER_SIZE, fmt, ap);

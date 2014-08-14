@@ -420,18 +420,10 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
      * query ldap server and retrieve access permission and certificate of user
      */
     query_ldap(cfg);
-    
-    /* make data transfer object available to module stack */
-    rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
-    if (rc != PAM_SUCCESS) {
-        LOG_FAIL("pam_set_data()");
-        goto auth_err;
-    }
-
     return PAM_SUCCESS;
 
     auth_err:
-	    // free config
+        // free config
         cfg_free_value(opts);
         cfg_free(cfg);
         return PAM_AUTH_ERR;
