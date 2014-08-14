@@ -15,17 +15,6 @@
 #include <confuse.h>
 
 /* macros */
-#define __LOG_FACILITY          LOG_LOCAL1
-#define __INTERNAL_LOG(P, ...)  if (x509_info != NULL) { \
-                                    syslog(x509_info->log_facility, P __VA_ARGS__); \
-                                } else { \
-                                    syslog(__LOG_FACILITY, P __VA_ARGS__); \
-                                }
-
-#define LOG_SUCCESS(...)        __INTERNAL_LOG("[+] ", __VA_ARGS__)
-#define LOG_FAIL(...)           __INTERNAL_LOG("[-] ", __VA_ARGS__)
-#define LOG_MSG(...)            __INTERNAL_LOG("[#] ", __VA_ARGS__)
-
 #define PUT_32BIT(cp, value)( \
     (cp)[0] = (unsigned char)((value) >> 24), \
     (cp)[1] = (unsigned char)((value) >> 16), \
@@ -39,27 +28,29 @@ struct __config_lookup_table {
 };
 
 struct pam_openssh_x509_info {
-    /* certificate information */
-    char has_cert;
-    char *subject;
-    char *serial;
-    char *issuer;
-    char is_expired;
-    char has_valid_signature;
-    char is_revoked;
-
-    /* openssh related */
     char *uid;
     char *authorized_keys_file;
     char *ssh_rsa;
 
-    /* misc */
+    char has_cert;
+    char *serial;
+    char *issuer;
+    char *subject;
+    char has_valid_signature;
+    char is_expired;
+    char is_revoked;
+
     char directory_online;
     char has_access;
-    int log_facility;
+
+    long int log_facility;
 };
 
 /* function declarations */
+void LOG_SUCCESS(const char *fmt, ...);
+void LOG_FAIL(const char *fmt, ...);
+void LOG_MSG(const char *fmt, ...);
+int set_log_facility(long int log_facility);
 long int config_lookup(const char *key);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
 void percent_expand(char token, char *repl, char *src, char *dst, int dst_length);

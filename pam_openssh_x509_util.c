@@ -1,8 +1,13 @@
+#include <stdarg.h>
 #include <syslog.h>
 #include <ldap.h>
 
 #include "include/pam_openssh_x509.h"
 
+#define DEFAULT_LOG_FACILITY LOG_LOCAL1
+#define LOG_BUFFER_SIZE 2048
+
+static long int log_facility = DEFAULT_LOG_FACILITY;
 static const char *own_fqdn = "test.ssh.hq";
 
 static struct __config_lookup_table _config_lookup[] =
@@ -46,6 +51,63 @@ static struct __config_lookup_table _config_lookup[] =
         { NULL, 0 }
     };
 
+long int
+config_lookup(const char *key)
+{
+    if (key == NULL) {
+        return -EINVAL;
+    }
+    struct __config_lookup_table *lookup_ptr;
+    for (lookup_ptr = _config_lookup; lookup_ptr->name != NULL; lookup_ptr++) {
+        if (strcasecmp(lookup_ptr->name, key) == 0) {
+            return lookup_ptr->value;
+        }
+    }
+    return -EINVAL;
+}
+
+static void __LOG(char *prefix, const char *fmt, va_list ap)
+{
+    char buffer[LOG_BUFFER_SIZE];
+    vsnprintf(buffer, LOG_BUFFER_SIZE, fmt, ap);
+    syslog(log_facility, "%s %s\n", prefix, buffer);
+}
+
+void
+LOG_SUCCESS(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    __LOG("[+]", fmt, ap);
+    va_end(ap);
+}
+
+void
+LOG_FAIL(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    __LOG("[-]", fmt, ap);
+    va_end(ap);
+}
+
+void
+LOG_MSG(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    __LOG("[#]", fmt, ap);
+    va_end(ap);
+}
+
+int
+set_log_facility(long int lf_in)
+{
+    /* TODO: check if value is valid for a syslog level by crawling the lookup table */
+    log_facility = lf_in;
+    return 1;
+}
+
 static int
 is_msb_set(unsigned char byte)
 {
@@ -54,19 +116,6 @@ is_msb_set(unsigned char byte)
     } else {
         return 0;
     }
-}
-
-long int
-config_lookup(const char *key)
-{
-    struct __config_lookup_table *lookup_ptr;
-    for (lookup_ptr = _config_lookup; lookup_ptr->name != NULL; lookup_ptr++) {
-        if (strcasecmp(lookup_ptr->name, key) == 0) {
-            return lookup_ptr->value;
-        }
-    }
-
-    return -EINVAL;
 }
 
 void
@@ -88,7 +137,7 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
         x509_info->ssh_rsa = NULL;
         x509_info->directory_online = 0x86;
         x509_info->has_access = 0x86;
-        x509_info->log_facility = __LOG_FACILITY;
+        x509_info->log_facility = DEFAULT_LOG_FACILITY;
     }
 }
 

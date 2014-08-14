@@ -6,7 +6,6 @@
 
 #include "include/pam_openssh_x509.h"
 
-static struct pam_openssh_x509_info *x509_info = NULL;
 static char *unset = "unset";
 
 static void
@@ -43,8 +42,12 @@ log_char(char *attr, char value)
 PAM_EXTERN int
 pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
+    struct pam_openssh_x509_info *x509_info = NULL;
     int rc = pam_get_data(pamh, "x509_info", (const void **) &x509_info);
     if (rc == PAM_SUCCESS) {
+        /* set log facility */
+        rc = set_log_facility(x509_info->log_facility);
+
         LOG_MSG("===================================================");
         log_string("uid", x509_info->uid);
         log_string("auth_keys_file", x509_info->authorized_keys_file);

@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wno-unused-but-set-variable
+CFLAGS=-Wall -fPIC -Wno-unused-but-set-variable
 LDFLAGS=-lldap -lpam -lconfuse -shared
 
 BUILDDIR=build
@@ -15,5 +15,5 @@ $(BUILDDIR)/pam_openssh_x509_validate.so: pam_openssh_x509_validate.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
 
 $(BUILDDIR)/pam_openssh_x509_audit.so: pam_openssh_x509_audit.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ pam_openssh_x509_util.c $<
 

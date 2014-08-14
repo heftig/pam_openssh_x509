@@ -267,7 +267,7 @@ static int cfg_value_parser_lookup
     }
     /* reset log_facility var */
     if (strcmp("pam_log_facility", cfg_opt_name(opt)) == 0) {
-        x509_info->log_facility = result_value;
+        set_log_facility(result_value);
     }
 
     long int *ptr_result = result;
@@ -300,12 +300,9 @@ static int cfg_validate_ldap_search_timeout
 PAM_EXTERN int
 pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-    /* initialize data transfer object */
-    x509_info = malloc(sizeof(*x509_info));
-    if (x509_info != NULL) {
-        init_data_transfer_object(x509_info);
-    } else {
-        LOG_FAIL("init of data transfer object failed");
+    /* first argument must be path to config file */
+    if (argc != 1) {
+        LOG_FAIL("arg count != 1");
         goto auth_err;
     }
 
@@ -333,15 +330,8 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
     cfg_set_validate_func(cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
 
-    /* first argument must be path to config file */
-    if (argc != 1) {
-        LOG_FAIL("arg count != 1");
-        goto auth_err;
-    }
-
     /* parse config */
-    switch (cfg_parse(cfg, argv[0]))
-    {
+    switch (cfg_parse(cfg, argv[0])) {
         case CFG_SUCCESS:
             break;
         case CFG_FILE_ERROR:
@@ -350,9 +340,28 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
             goto auth_err;
     }
 
+    /* initialize data transfer object */
+    x509_info = malloc(sizeof(*x509_info));
+    if (x509_info != NULL) {
+        init_data_transfer_object(x509_info);
+    } else {
+        LOG_FAIL("init of data transfer object failed");
+        goto auth_err;
+    }
+
+    /* make data transfer object available to module stack */
+    int rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
+    if (rc != PAM_SUCCESS) {
+        LOG_FAIL("pam_set_data()");
+        goto auth_err;
+    }
+
+    /* make log facility available in data transfer object */
+    x509_info->log_facility = cfg_getint(cfg, "pam_log_facility");
+
     /* retrieve uid and check for local account */
     const char *uid = NULL;
-    int rc = pam_get_user(pamh, &uid, NULL);
+    rc = pam_get_user(pamh, &uid, NULL);
     if (rc == PAM_SUCCESS) {
         /*
          * make uid available in data transfer object. do not point to value in
