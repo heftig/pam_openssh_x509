@@ -155,7 +155,7 @@ query_ldap(cfg_t *cfg)
                                             /* TODO: free everything that has been gathered through openssl and malloc own space */
                                             pkey = X509_get_pubkey(x509);
                                             /* obtain information */
-                                            extract_ssh_key(cfg, pkey, &(x509_info->ssh_rsa));
+                                            extract_ssh_key(pkey, &(x509_info->ssh_rsa));
                                             check_signature(NULL, &(x509_info->has_valid_signature));
                                             check_expiration(NULL, &(x509_info->is_expired));
                                             check_revocation(NULL, &(x509_info->is_revoked));

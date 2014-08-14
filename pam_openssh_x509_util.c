@@ -122,21 +122,23 @@ void
 init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
 {
     if (x509_info != NULL) {
-        /* set standard values */
         memset(x509_info, 0, sizeof(*x509_info));
 
-        x509_info->has_cert = 0x86;
-        x509_info->subject = NULL;
-        x509_info->serial = NULL;
-        x509_info->issuer = NULL;
-        x509_info->is_expired = 0x86;
-        x509_info->has_valid_signature = 0x86;
-        x509_info->is_revoked = 0x86;
         x509_info->uid = NULL;
         x509_info->authorized_keys_file = NULL;
         x509_info->ssh_rsa = NULL;
+
+        x509_info->has_cert = 0x86;
+        x509_info->serial = NULL;
+        x509_info->issuer = NULL;
+        x509_info->subject = NULL;
+        x509_info->has_valid_signature = 0x86;
+        x509_info->is_expired = 0x86;
+        x509_info->is_revoked = 0x86;
+
         x509_info->directory_online = 0x86;
         x509_info->has_access = 0x86;
+
         x509_info->log_facility = DEFAULT_LOG_FACILITY;
     }
 }
@@ -231,22 +233,22 @@ check_revocation(char *exchange_with_cert, char *is_revoked)
 }
 
 void
-extract_ssh_key(cfg_t *cfg, EVP_PKEY *pkey, char **ssh_rsa)
+extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
 {
     if (pkey == NULL) {
-        syslog(cfg_getint(cfg, "pam_log_facility"), "[-] extract_ssh_key(): pkey == NULL");
+        LOG_FAIL("extract_ssh_key(): pkey == NULL");
         return;
     }
 
     switch (EVP_PKEY_type(pkey->type)) {
         case EVP_PKEY_RSA:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "[#] keytype: rsa");
+                LOG_MSG("keytype: rsa");
                 char *keyname = "ssh-rsa";
                 RSA *rsa = EVP_PKEY_get1_RSA(pkey);
                 if (rsa == NULL) {
                 /* unlikely */
-                    syslog(cfg_getint(cfg, "pam_log_facility"), "[-] EVP_PKEY_get1_RSA(): rsa == NULL");
+                    LOG_FAIL("EVP_PKEY_get1_RSA(): rsa == NULL");
                     break;
                 }
 
@@ -334,22 +336,22 @@ extract_ssh_key(cfg_t *cfg, EVP_PKEY *pkey, char **ssh_rsa)
             }
         case EVP_PKEY_DSA:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "[#] dsa...");
+                LOG_MSG("dsa...");
                 break;
             }
         case EVP_PKEY_DH:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "[#] dh...");
+                LOG_MSG("dh...");
                 break;
             }
         case EVP_PKEY_EC:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "[#] ec...");
+                LOG_MSG("ec...");
                 break;
             }
         default:
             {
-                syslog(cfg_getint(cfg, "pam_log_facility"), "[-] unsupported public key type (%i)", pkey->type);
+                LOG_FAIL("unsupported public key type (%i)", pkey->type);
             }
     }
 }

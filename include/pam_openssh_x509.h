@@ -58,5 +58,5 @@ void check_access(char *group_dn, char *has_access);
 void check_signature(char *exchange_with_cert, char *has_valid_signature);
 void check_expiration(char *exchange_with_cert, char *is_expired);
 void check_revocation(char *exchange_with_cert, char *is_revoked);
-void extract_ssh_key(cfg_t *cfg, EVP_PKEY *pkey, char **ssh_rsa);
+void extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa);
 #endif
