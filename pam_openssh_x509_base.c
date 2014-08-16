@@ -420,12 +420,15 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
      * query ldap server and retrieve access permission and certificate of user
      */
     query_ldap(cfg);
+
+    /* free config */
+    release_config(cfg);
+
     return PAM_SUCCESS;
 
     auth_err:
-        // free config
-        cfg_free_value(opts);
-        cfg_free(cfg);
+        /* free config */
+        release_config(cfg);
         return PAM_AUTH_ERR;
 }
 

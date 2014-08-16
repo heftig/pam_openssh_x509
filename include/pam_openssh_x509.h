@@ -52,6 +52,7 @@ void LOG_FAIL(const char *fmt, ...);
 void LOG_MSG(const char *fmt, ...);
 int set_log_facility(long int log_facility);
 long int config_lookup(const char *key);
+void release_config(cfg_t *cfg);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
 void percent_expand(char token, char *repl, char *src, char *dst, int dst_length);
 void check_access(char *group_dn, char *has_access);

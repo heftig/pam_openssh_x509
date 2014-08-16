@@ -195,6 +195,18 @@ void percent_expand
     }
 }
 
+void release_config
+(cfg_t *cfg)
+{
+    /* free values of each option */
+    cfg_opt_t *opt_ptr;
+    for(opt_ptr = cfg->opts; opt_ptr->name != NULL; opt_ptr++) {
+        cfg_free_value(opt_ptr);
+    }
+    /* free cfg structure */
+    cfg_free(cfg);
+}
+
 void
 check_access(char *group_dn, char *has_access)
 {
