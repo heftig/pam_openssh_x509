@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2014 Sebastian Roland <seroland86@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -323,7 +340,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         CFG_END()
     }; 
 
-    /* initalize config */
+    /* initialize config */
     cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
     /* register callbacks */
     cfg_set_error_function(cfg, &cfg_error_handler);

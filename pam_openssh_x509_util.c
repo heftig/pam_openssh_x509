@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2014 Sebastian Roland <seroland86@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <stdarg.h>
 #include <syslog.h>
 #include <ldap.h>
@@ -200,7 +217,7 @@ void release_config
 {
     /* free values of each option */
     cfg_opt_t *opt_ptr;
-    for(opt_ptr = cfg->opts; opt_ptr->name != NULL; opt_ptr++) {
+    for (opt_ptr = cfg->opts; opt_ptr->name != NULL; opt_ptr++) {
         cfg_free_value(opt_ptr);
     }
     /* free cfg structure */
