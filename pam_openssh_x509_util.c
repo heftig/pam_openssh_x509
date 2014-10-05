@@ -27,9 +27,9 @@
 static long int log_facility = DEFAULT_LOG_FACILITY;
 static const char *own_fqdn = "test.ssh.hq";
 
-static struct __config_lookup_table _config_lookup[] =
+/* define config lookup table */
+static struct __config_lookup_table syslog_facilities[] =
     {
-        // syslog facilities
         { "LOG_KERN", LOG_KERN },
         { "LOG_USER", LOG_USER },
         { "LOG_MAIL", LOG_MAIL },
@@ -50,8 +50,12 @@ static struct __config_lookup_table _config_lookup[] =
         { "LOG_LOCAL5", LOG_LOCAL5 },
         { "LOG_LOCAL6", LOG_LOCAL6 },
         { "LOG_LOCAL7", LOG_LOCAL6 },
+        /* mark end */
+        { NULL, 0 }
+    };
 
-        // libldap
+static struct __config_lookup_table libldap[] =
+    {
         { "LDAP_VERSION1", LDAP_VERSION1 },
         { "LDAP_VERSION2", LDAP_VERSION2 },
         { "LDAP_VERSION3", LDAP_VERSION3 },
@@ -63,19 +67,20 @@ static struct __config_lookup_table _config_lookup[] =
         { "LDAP_SCOPE_SUB", LDAP_SCOPE_SUB },
         { "LDAP_SCOPE_SUBORDINATE", LDAP_SCOPE_SUBORDINATE },
         { "LDAP_SCOPE_CHILDREN", LDAP_SCOPE_CHILDREN },
-
-        // mark end
+        /* mark end */
         { NULL, 0 }
     };
 
+static struct __config_lookup_table *_config_lookup[] = { syslog_facilities, libldap };
+
 long int
-config_lookup(const char *key)
+config_lookup(const enum __sections sec, const char *key)
 {
     if (key == NULL) {
         return -EINVAL;
     }
     struct __config_lookup_table *lookup_ptr;
-    for (lookup_ptr = _config_lookup; lookup_ptr->name != NULL; lookup_ptr++) {
+    for (lookup_ptr = _config_lookup[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
         if (strcasecmp(lookup_ptr->name, key) == 0) {
             return lookup_ptr->value;
         }
@@ -119,11 +124,14 @@ LOG_MSG(const char *fmt, ...)
 }
 
 int
-set_log_facility(long int lf_in)
+set_log_facility(const char *lf_in)
 {
-    /* TODO: check if value is valid for a syslog level by crawling the lookup table */
-    log_facility = lf_in;
-    return 1;
+    long int value = config_lookup(SYSLOG, lf_in);
+    if (value != -EINVAL) {
+        log_facility = value;
+        return 0;
+    }
+    return -EINVAL;
 }
 
 static int
@@ -157,7 +165,7 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
         x509_info->directory_online = 0x86;
         x509_info->has_access = 0x86;
 
-        x509_info->log_facility = DEFAULT_LOG_FACILITY;
+        x509_info->log_facility = NULL;
     }
 }
 

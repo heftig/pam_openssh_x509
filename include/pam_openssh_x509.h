@@ -39,6 +39,8 @@
     (cp)[3] = (unsigned char)(value) )
 
 /* type declarations */
+enum __sections { SYSLOG, LIBLDAP };
+
 struct __config_lookup_table {
     char *name;
     int value;
@@ -60,15 +62,15 @@ struct pam_openssh_x509_info {
     char directory_online;
     char has_access;
 
-    long int log_facility;
+    char *log_facility;
 };
 
 /* function declarations */
 void LOG_SUCCESS(const char *fmt, ...);
 void LOG_FAIL(const char *fmt, ...);
 void LOG_MSG(const char *fmt, ...);
-int set_log_facility(long int log_facility);
-long int config_lookup(const char *key);
+int set_log_facility(const char *log_facility);
+long int config_lookup(const enum __sections sec, const char *key);
 void release_config(cfg_t *cfg);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
 void percent_expand(char token, char *repl, char *src, char *dst, int dst_length);

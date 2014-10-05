@@ -274,21 +274,28 @@ static void cfg_error_handler
  * note that value parsing and validation callback functions will only be called
  * during parsing. altering the value later wont incorporate them
  */
-static int cfg_value_parser_lookup
+static int cfg_str_to_int_parser_libldap
 (cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result) 
 {
-    long int result_value = config_lookup(value);
+    long int result_value = config_lookup(LIBLDAP, value);
     if (result_value == -EINVAL) {
         cfg_error(cfg, "cfg_value_parser_int(): option: '%s', value: '%s'", cfg_opt_name(opt), value);
         return -1; 
     }
-    /* reset log_facility var */
-    if (strcmp("pam_log_facility", cfg_opt_name(opt)) == 0) {
-        set_log_facility(result_value);
-    }
 
     long int *ptr_result = result;
     *ptr_result = result_value;
+    return 0;
+}
+
+static int cfg_validate_log_facility
+(cfg_t *cfg, cfg_opt_t *opt)
+{
+    const char *log_facility = cfg_opt_getnstr(opt, 0);
+    if (set_log_facility(log_facility) == -EINVAL) {
+        cfg_error(cfg, "cfg_validate_log_facility(): option: '%s', value: '%s' (value is not a valid syslog facility)", cfg_opt_name(opt), log_facility);
+        return -1;
+    }
     return 0;
 }
 
@@ -325,14 +332,14 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 
     /* setup config options */
     cfg_opt_t opts[] = { 
-        CFG_INT_CB("pam_log_facility", 0, CFGF_NODEFAULT, &cfg_value_parser_lookup),
+        CFG_STR("log_facility", NULL, CFGF_NODEFAULT),
         CFG_STR("ldap_uri", "ldap://localhost:389", CFGF_NONE),
         CFG_STR("ldap_bind_dn", "cn=directory_manager,dc=ssh,dc=hq", CFGF_NONE),
         CFG_STR("ldap_pwd", "test123", CFGF_NONE),
         CFG_STR("ldap_base", "ou=person,dc=ssh,dc=hq", CFGF_NONE),
-        CFG_INT_CB("ldap_scope", config_lookup("LDAP_SCOPE_ONE"), CFGF_NONE, &cfg_value_parser_lookup),
+        CFG_INT_CB("ldap_scope", config_lookup(LIBLDAP, "LDAP_SCOPE_ONE"), CFGF_NONE, &cfg_str_to_int_parser_libldap),
         CFG_INT("ldap_search_timeout", 5, CFGF_NONE),
-        CFG_INT_CB("ldap_version", config_lookup("LDAP_VERSION3"), CFGF_NONE, &cfg_value_parser_lookup),
+        CFG_INT_CB("ldap_version", config_lookup(LIBLDAP, "LDAP_VERSION3"), CFGF_NONE, &cfg_str_to_int_parser_libldap),
         CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
         CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
         CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
@@ -344,6 +351,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
     /* register callbacks */
     cfg_set_error_function(cfg, &cfg_error_handler);
+    cfg_set_validate_func(cfg, "log_facility", &cfg_validate_log_facility);
     cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
     cfg_set_validate_func(cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
 
@@ -374,7 +382,11 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     }
 
     /* make log facility available in data transfer object */
-    x509_info->log_facility = cfg_getint(cfg, "pam_log_facility");
+    x509_info->log_facility = strdup(cfg_getstr(cfg, "log_facility"));
+    if (x509_info->log_facility == NULL) {
+        LOG_FAIL("strdup()");
+        goto auth_err;
+    }
 
     /* retrieve uid and check for local account */
     const char *uid = NULL;
