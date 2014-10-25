@@ -31,13 +31,6 @@
 #include <openssl/x509.h>
 #include <confuse.h>
 
-/* macros */
-#define PUT_32BIT(cp, value)( \
-    (cp)[0] = (unsigned char)((value) >> 24), \
-    (cp)[1] = (unsigned char)((value) >> 16), \
-    (cp)[2] = (unsigned char)((value) >> 8), \
-    (cp)[3] = (unsigned char)(value) )
-
 /* type declarations */
 enum __sections { SYSLOG, LIBLDAP };
 
@@ -74,7 +67,7 @@ long int config_lookup(const enum __sections sec, const char *key);
 void release_config(cfg_t *cfg);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
 void percent_expand(char token, char *repl, char *src, char *dst, int dst_length);
-void check_access(char *group_dn, char *has_access);
+void check_access(char *group_dn, char *prefix, char *has_access);
 void check_signature(char *exchange_with_cert, char *has_valid_signature);
 void check_expiration(char *exchange_with_cert, char *is_expired);
 void check_revocation(char *exchange_with_cert, char *is_revoked);

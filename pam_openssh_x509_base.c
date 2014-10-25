@@ -119,7 +119,7 @@ query_ldap(cfg_t *cfg)
                     case LDAP_RES_SEARCH_ENTRY:
                         {
                             char *entry_dn = ldap_get_dn(ldap_handle, ldap_result); 
-                            LOG_MSG("dn: %s\n", entry_dn);
+                            LOG_MSG("user_dn: %s", entry_dn);
                             /*
                              * iterate over all requested attributes
                              */
@@ -147,7 +147,8 @@ query_ldap(cfg_t *cfg)
                                                 break;
                                             }
                                             /* check access permission based on group membership and store result */
-                                            check_access(value, &(x509_info->has_access));
+                                            LOG_MSG("group_dn: %s", value);
+                                            check_access(value, cfg_getstr(cfg, "ldap_ssh_group_prefix"), &(x509_info->has_access));
 
                                         /*
                                          * process x.509 certificates
@@ -157,10 +158,8 @@ query_ldap(cfg_t *cfg)
                                             if (x509_info->has_cert == 1) {
                                                 break;
                                             }
-                                            /* get public key */
-                                            X509 *x509;
-                                            x509 = d2i_X509(NULL, (const unsigned char **) &value, len);
-
+                                            /* decode certificate */
+                                            X509 *x509 = d2i_X509(NULL, (const unsigned char **) &value, len);
                                             if (x509 == NULL) {
                                                 LOG_FAIL("d2i_X509(): cannot decode certificate");
                                                 /* try next certificate if existing */
@@ -168,17 +167,24 @@ query_ldap(cfg_t *cfg)
                                             }
                                             x509_info->has_cert = 1;
 
-                                            EVP_PKEY *pkey; 
-                                            /* TODO: free everything that has been gathered through openssl and malloc own space */
-                                            pkey = X509_get_pubkey(x509);
-                                            /* obtain information */
-                                            extract_ssh_key(pkey, &(x509_info->ssh_rsa));
+                                            /* extract public key */
+                                            EVP_PKEY *pkey = X509_get_pubkey(x509);
+                                            if (pkey != NULL) {
+                                                /* convert public key to ssh format */
+                                                extract_ssh_key(pkey, &(x509_info->ssh_rsa));
+                                                EVP_PKEY_free(pkey);
+                                            } else {
+                                                LOG_FAIL("X509_get_pubkey(): unable to load public key");
+                                            }
                                             check_signature(NULL, &(x509_info->has_valid_signature));
                                             check_expiration(NULL, &(x509_info->is_expired));
                                             check_revocation(NULL, &(x509_info->is_revoked));
                                             x509_info->subject = X509_NAME_oneline(X509_get_subject_name(x509), NULL, 0);
                                             x509_info->serial = BN_bn2hex(ASN1_INTEGER_to_BN(X509_get_serialNumber(x509), 0));
                                             x509_info->issuer = X509_NAME_oneline(X509_get_issuer_name(x509), NULL, 0);
+
+                                            /* free x509 structure */
+                                            X509_free(x509);
 
                                         } else {
                                             /* should be impossible */
@@ -262,8 +268,8 @@ query_ldap(cfg_t *cfg)
         }
 }
 
-static void cfg_error_handler
-(cfg_t *cfg, const char *fmt, va_list ap) 
+static void
+cfg_error_handler (cfg_t *cfg, const char *fmt, va_list ap)
 {
     char error_msg[1024];
     vsnprintf(error_msg, sizeof(error_msg), fmt, ap);
@@ -274,8 +280,8 @@ static void cfg_error_handler
  * note that value parsing and validation callback functions will only be called
  * during parsing. altering the value later wont incorporate them
  */
-static int cfg_str_to_int_parser_libldap
-(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result) 
+static int
+cfg_str_to_int_parser_libldap (cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
     long int result_value = config_lookup(LIBLDAP, value);
     if (result_value == -EINVAL) {
@@ -288,8 +294,8 @@ static int cfg_str_to_int_parser_libldap
     return 0;
 }
 
-static int cfg_validate_log_facility
-(cfg_t *cfg, cfg_opt_t *opt)
+static int
+cfg_validate_log_facility (cfg_t *cfg, cfg_opt_t *opt)
 {
     const char *log_facility = cfg_opt_getnstr(opt, 0);
     if (set_log_facility(log_facility) == -EINVAL) {
@@ -299,8 +305,8 @@ static int cfg_validate_log_facility
     return 0;
 }
 
-static int cfg_validate_ldap_uri
-(cfg_t *cfg, cfg_opt_t *opt)
+static int
+cfg_validate_ldap_uri (cfg_t *cfg, cfg_opt_t *opt)
 {
     const char *ldap_uri = cfg_opt_getnstr(opt, 0);
     if (ldap_is_ldap_url(ldap_uri) == 0) {
@@ -310,8 +316,8 @@ static int cfg_validate_ldap_uri
     return 0;
 }
 
-static int cfg_validate_ldap_search_timeout
-(cfg_t *cfg, cfg_opt_t *opt)
+static int
+cfg_validate_ldap_search_timeout (cfg_t *cfg, cfg_opt_t *opt)
 {
     long int timeout = cfg_opt_getnint(opt, 0);
     if (timeout <= 0) {
@@ -343,6 +349,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
         CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
         CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
+        CFG_STR("ldap_ssh_group_prefix", "ssh_", CFGF_NONE),
         CFG_STR("authorized_keys_file", "/usr/local/etc/ssh/keystore/%u/authorized_keys", CFGF_NONE),
         CFG_END()
     }; 

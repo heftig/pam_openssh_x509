@@ -23,6 +23,13 @@
 
 #define DEFAULT_LOG_FACILITY LOG_LOCAL1
 #define LOG_BUFFER_SIZE 2048
+#define GROUP_DN_BUFFER_SIZE 512
+
+#define PUT_32BIT(cp, value)( \
+    (cp)[0] = (unsigned char)((value) >> 24), \
+    (cp)[1] = (unsigned char)((value) >> 16), \
+    (cp)[2] = (unsigned char)((value) >> 8), \
+    (cp)[3] = (unsigned char)(value) )
 
 static long int log_facility = DEFAULT_LOG_FACILITY;
 static const char *own_fqdn = "test.ssh.hq";
@@ -189,8 +196,8 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
  * /etc/ssh/keystore/../../../root/.ssh/authorized_keys
  *
  */
-void percent_expand
-(char token, char *subst, char *src, char *dst, int dst_length)
+void
+percent_expand (char token, char *subst, char *src, char *dst, int dst_length)
 {
     if (subst != NULL && src != NULL && dst != NULL) {
         bool cdt = 0;
@@ -220,8 +227,8 @@ void percent_expand
     }
 }
 
-void release_config
-(cfg_t *cfg)
+void
+release_config (cfg_t *cfg)
 {
     /* free values of each option */
     cfg_opt_t *opt_ptr;
@@ -233,15 +240,25 @@ void release_config
 }
 
 void
-check_access(char *group_dn, char *has_access)
+check_access(char *group_dn, char *prefix, char *has_access)
 {
-    char *stored_fqdn = strtok(group_dn, "=");
-    stored_fqdn = strtok(NULL, "_");
-    stored_fqdn = strtok(NULL, ",");
+    /*
+     * copy group_dn to char array in order to make sure that
+     * string is mutable as strtok will try to change it
+     */
+    char group_dn_mutable[GROUP_DN_BUFFER_SIZE];
+    strncpy(group_dn_mutable, group_dn, GROUP_DN_BUFFER_SIZE);
 
-    if (stored_fqdn && own_fqdn) {
-        if (strcmp(stored_fqdn, own_fqdn) == 0) {
-        /* attribute set for server */
+    size_t prefix_length = strlen(prefix);
+    char *token = NULL;
+    token = strtok(group_dn_mutable, "=");
+    token = strtok(NULL, ",");
+
+    /* token now contains prefix+group_fqdn */
+    if (strncmp(prefix, token, prefix_length) == 0) {
+        /* prefix found */
+        char *group_fqdn = token + prefix_length;
+        if (strcmp(own_fqdn, group_fqdn) == 0) {
             *has_access = 1;
             return;
         }
@@ -273,6 +290,7 @@ check_revocation(char *exchange_with_cert, char *is_revoked)
 void
 extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
 {
+    /* should never happen */
     if (pkey == NULL) {
         LOG_FAIL("extract_ssh_key(): pkey == NULL");
         return;
@@ -285,8 +303,7 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
                 char *keyname = "ssh-rsa";
                 RSA *rsa = EVP_PKEY_get1_RSA(pkey);
                 if (rsa == NULL) {
-                /* unlikely */
-                    LOG_FAIL("EVP_PKEY_get1_RSA(): rsa == NULL");
+                    LOG_FAIL("EVP_PKEY_get1_RSA()");
                     break;
                 }
 
@@ -296,7 +313,8 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
                 length_exponent = BN_num_bytes(rsa->e);
                 length_modulus = BN_num_bytes(rsa->n);
 
-                /* the 4 bytes hold the length of the following value and the 2 extra bytes before
+                /*
+                 * the 4 bytes hold the length of the following value and the 2 extra bytes before
                  * the exponent and modulus are possibly needed to prefix the values with leading zeroes if the
                  * most significant bit of them is set. this is to avoid misinterpreting the value as a
                  * negative number later.
@@ -343,16 +361,27 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
                 /* encode base64 */
                 int data_in;
                 long data_out;
-                unsigned char *tmp_result;
-                BIO *bio, *b64;
+                unsigned char *tmp_result = NULL;
 
-                bio = BIO_new(BIO_s_mem());
-                b64 = BIO_new(BIO_f_base64());
-                BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-                b64 = BIO_push(b64, bio);
-                data_in = BIO_write(b64, blob, post_length_blob);
-                BIO_flush(b64);
-                data_out = BIO_get_mem_data(b64, &tmp_result);
+                /* create base64 bio */
+                BIO *bio_base64 = BIO_new(BIO_f_base64());
+                if (bio_base64 == NULL) {
+                    LOG_FAIL("BIO_new()");
+                    goto free_rsa;
+                }
+                BIO_set_flags(bio_base64, BIO_FLAGS_BASE64_NO_NL);
+
+                /* create memory bio */
+                BIO *bio_mem = BIO_new(BIO_s_mem());
+                if (bio_mem == NULL) {
+                    LOG_FAIL("BIO_new()");
+                    goto free_bio_rsa;
+                }
+                /* create bio chain base64->mem */
+                bio_base64 = BIO_push(bio_base64, bio_mem);
+                data_in = BIO_write(bio_base64, blob, post_length_blob);
+                BIO_flush(bio_base64);
+                data_out = BIO_get_mem_data(bio_base64, &tmp_result);
 
                 /* store key */
                 char *ssh_pkey = malloc(data_out + 1);
@@ -366,9 +395,10 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
                 *ssh_rsa = ssh_pkey;
 
                 /* clear structures */
-                BIO_free_all(b64);
-                RSA_free(rsa);
-                EVP_PKEY_free(pkey);
+                free_bio_rsa:
+                    BIO_free_all(bio_base64);
+                free_rsa:
+                    RSA_free(rsa);
 
                 break;
             }
