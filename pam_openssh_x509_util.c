@@ -23,7 +23,7 @@
 
 #define DEFAULT_LOG_FACILITY LOG_LOCAL1
 #define LOG_BUFFER_SIZE 2048
-#define GROUP_DN_BUFFER_SIZE 512
+#define GROUP_DN_BUFFER_SIZE 1024
 
 #define PUT_32BIT(cp, value)( \
     (cp)[0] = (unsigned char)((value) >> 24), \
@@ -32,7 +32,6 @@
     (cp)[3] = (unsigned char)(value) )
 
 static long int log_facility = DEFAULT_LOG_FACILITY;
-static const char *own_fqdn = "test.ssh.hq";
 
 /* define config lookup table */
 static struct __config_lookup_table syslog_facilities[] =
@@ -239,8 +238,33 @@ release_config (cfg_t *cfg)
     cfg_free(cfg);
 }
 
+/*
 void
-check_access(char *group_dn, char *prefix, char *has_access)
+get_fqdn(char *buffer, int buffer_length)
+{
+    char hostname[HOSTNAME_BUFFER_SIZE];
+    int rc = gethostname(hostname, sizeof(hostname));
+    if (rc == 0) {
+        struct addrinfo *addrinfo = NULL;
+        struct addrinfo hints;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_flags = AI_CANONNAME;
+        hints.ai_family = AF_UNSPEC;
+
+        rc = getaddrinfo(hostname, NULL, &hints, &addrinfo);
+        if (rc == 0) {
+            if (addrinfo->ai_canonname != NULL) {
+                buffer[buffer_length - 1] = '\0';
+                strncpy(buffer, addrinfo->ai_canonname, buffer_length - 1);
+            }
+            freeaddrinfo(addrinfo);
+        }
+    }
+}
+*/
+
+void
+check_access(char *group_dn, char *identifier, char *has_access)
 {
     /*
      * copy group_dn to char array in order to make sure that
@@ -249,19 +273,12 @@ check_access(char *group_dn, char *prefix, char *has_access)
     char group_dn_mutable[GROUP_DN_BUFFER_SIZE];
     strncpy(group_dn_mutable, group_dn, GROUP_DN_BUFFER_SIZE);
 
-    size_t prefix_length = strlen(prefix);
-    char *token = NULL;
-    token = strtok(group_dn_mutable, "=");
+    char *token = strtok(group_dn_mutable, "=");
     token = strtok(NULL, ",");
-
-    /* token now contains prefix+group_fqdn */
-    if (strncmp(prefix, token, prefix_length) == 0) {
-        /* prefix found */
-        char *group_fqdn = token + prefix_length;
-        if (strcmp(own_fqdn, group_fqdn) == 0) {
-            *has_access = 1;
-            return;
-        }
+    /* token now contains rdn value of group only */
+    if (strcmp(token, identifier) == 0) {
+        *has_access = 1;
+        return;
     }
     *has_access = 0;
 }

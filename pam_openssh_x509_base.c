@@ -148,7 +148,7 @@ query_ldap(cfg_t *cfg)
                                             }
                                             /* check access permission based on group membership and store result */
                                             LOG_MSG("group_dn: %s", value);
-                                            check_access(value, cfg_getstr(cfg, "ldap_ssh_group_prefix"), &(x509_info->has_access));
+                                            check_access(value, cfg_getstr(cfg, "ldap_group_identifier"), &(x509_info->has_access));
 
                                         /*
                                          * process x.509 certificates
@@ -349,7 +349,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
         CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
         CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
-        CFG_STR("ldap_ssh_group_prefix", "ssh_", CFGF_NONE),
+        CFG_STR("ldap_group_identifier", "ssh_", CFGF_NONE),
         CFG_STR("authorized_keys_file", "/usr/local/etc/ssh/keystore/%u/authorized_keys", CFGF_NONE),
         CFG_END()
     }; 
@@ -416,8 +416,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
          * the pam modules so that the whole pam module chain would run all the
          * time an invalid user would try to connect
          */
-        struct passwd *pwd = NULL;
-        pwd = getpwnam(x509_info->uid);
+        struct passwd *pwd = getpwnam(x509_info->uid);
 
         if (pwd == NULL) {
             LOG_FAIL("user '%s' has no local account", x509_info->uid);
