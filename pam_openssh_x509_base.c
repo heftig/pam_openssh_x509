@@ -349,7 +349,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
         CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
         CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
-        CFG_STR("ldap_group_identifier", "ssh_", CFGF_NONE),
+        CFG_STR("ldap_group_identifier", "ssh_test.ssh.hq", CFGF_NONE),
         CFG_STR("authorized_keys_file", "/usr/local/etc/ssh/keystore/%u/authorized_keys", CFGF_NONE),
         CFG_END()
     }; 
