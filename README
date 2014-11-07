@@ -117,13 +117,13 @@ pam_openssh_x509_validate.so
 
 The base file collects all the information but doesnt make any decissions about
 the update of the authorized_keys file and thus refers the decission if access
-shall be granted or not to downstream modules. The audit module is just a passive
-component that doesnt change the data transfer object or make any decission about
-the update of the authorized_keys file. The latter decissions are outsourced to
-the validation module that can be different for various environments. For example
-in a testing environment you wouldnt mind if the certificate is expired or revoked
-whereas you would in production. Basically the validation module is the only
-artefact that has to be adjusted to individual needs.
+shall be granted or not to downstream modules. The audit module is just a
+passive component that doesnt change the data transfer object or make any
+decission about the update of the authorized_keys file. The latter is outsourced
+to the validation module that can be different for various environments.
+For example in a testing environment you wouldnt mind if the certificate is
+expired or revoked whereas you would in production. Basically the validation
+module is the only artefact that has to be adjusted to individual needs.
 
 
 Installation
