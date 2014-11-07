@@ -15,8 +15,8 @@ Contents of this file
 Introduction
 ------------
 
-pam_openssh_x509 is a collection of PAM modules that paired with a PKI
-provides a fully automatized solution for the management of OpenSSH keys.
+pam_openssh_x509 is a collection of PAM modules that paired with a PKI provides
+a fully automatized solution for the management of OpenSSH keys.
 
 pam_openssh_x509 enables you to...
 
