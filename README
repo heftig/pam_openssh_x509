@@ -45,10 +45,10 @@ Operating Model
 The idea behind pam_openssh_x509 is to make managed x509 certificates accessible
 for OpenSSH Public key authentication. Contrary to other approaches the Source
 Code of OpenSSH wont be altered making it sort of independent from changes to
-OpenSSH. Also it supports components usually found in larger enterprises creating
-an integrated solution for OpenSSH key management. It therefore prevents the
-installation and maintenance of a whole new bloated software for managing OpenSSH
-key material yet raising the security level of the keys and reducing costs.
+OpenSSH. Also it supports components usually found in larger enterprises
+creating an integrated solution for OpenSSH key management. It therefore prevents
+the installation and maintenance of a whole new bloated software for managing
+OpenSSH key material yet raising the security level of the keys and reducing costs.
 
 The Operating Model consists of the following components:
 
