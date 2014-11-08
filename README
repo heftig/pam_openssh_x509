@@ -2,11 +2,11 @@ Contents of this file
 ---------------------
 
  * Introduction
- * Operating Model
- * Module Stack
+ * Operating model
+ * Module stack
  * Installation
  * Contribute
- * Bug Report / Feature Request
+ * Bug report / Feature request
  * Donate
  * License
  * Contact
@@ -22,7 +22,7 @@ pam_openssh_x509 enables you to...
 
  * reduce your costs yet improving security by using synergies of already
    established processes
- * centrally manage access to OpenSSH Servers
+ * centrally manage access to OpenSSH servers
  * raise the security level of OpenSSH keys to the same as x509 certificates
  * highly protect private keys by using Smartcard technology
  * periodically update key material without manual interaction
@@ -39,24 +39,24 @@ For more information on how to make the most out of pam_openssh_x509 see
 next section.
 
 
-Operating Model
+Operating model
 ---------------
 
 The idea behind pam_openssh_x509 is to make managed x509 certificates accessible
-for OpenSSH Public key authentication. Contrary to other approaches the Source
-Code of OpenSSH wont be altered making it sort of independent from changes to
+for OpenSSH public key authentication. Contrary to other approaches the source
+code of OpenSSH wont be altered making it sort of independent from changes to
 OpenSSH. Also it supports components usually found in larger enterprises
 creating an integrated solution for the OpenSSH key management. It therefore
 prevents the installation and maintenance of a whole new bloated software for
 managing OpenSSH key material yet raising the security level of the keys and
 reducing costs.
 
-The Operating Model consists of the following components:
+The operating model consists of the following components:
 
  * PKI
- * LDAP Server
+ * LDAP server
  * Smartcard technology (optional)
- * SSH Client supporting Smartcards (e.g. PuTTY-CAC) (optional)
+ * SSH client supporting Smartcards (e.g. PuTTY-CAC) (optional)
  * pam_openssh_x509
 
 The tasks of each component is as follows:
@@ -67,12 +67,12 @@ The PKI is responsible for the management of the lifecycle of x509 certificates
    will be created on Smartcard using a known key creation procedure)
  * re-key in regular intervals
  * maintain processes for key revocation
- * publish x509 certificates to LDAP Server
+ * publish x509 certificates to LDAP server
 
-The LDAP Server
+The LDAP server
 
  * stores all x509 certificates
- * maintains a list of all OpenSSH Servers
+ * maintains a list of all OpenSSH servers
 
 The Smartcard is used for
 
@@ -86,14 +86,14 @@ The SSH client supporting Smartcards will
 
 
 For the usage of pam_openssh_x509 the PKI has to store the x509 certificates at
-the user object in the LDAP Server. Every OpenSSH Server will be represented as
-a group in a distinct tree in the LDAP Server. Access permission to an OpenSSH
-Server is then granted through a group membership. pam_openssh_x509 makes sure
-that the public key of the x509 certificate is synchronized to the Server after
+the user object in the LDAP server. Every OpenSSH server will be represented as
+a group in a distinct tree in the LDAP server. Access permission to an OpenSSH
+server is then granted through a group membership. pam_openssh_x509 makes sure
+that the public key of the x509 certificate is synchronized to the server after
 the x509 certificate has been checked (trusted? valid? not revoked?).
 
 
-Module Stack
+Module stack
 ------------
 
 pam_openssh_x509 is made up of the following modules:
@@ -115,15 +115,15 @@ pam_openssh_x509_validate.so
  * policy that evaluates data transfer object and updates authorized_keys file
 
 
-The base file collects all the information but doesnt make any decissions about
-the update of the authorized_keys file and thus refers the decission if access
-shall be granted or not to downstream modules. The audit module is just a
-passive component that doesnt change the data transfer object or make any
-decission about the update of the authorized_keys file. The latter is outsourced
-to the validation module that can be different for various environments.
-For example in a testing environment you wouldnt mind if the certificate is
-expired or revoked whereas you would in production. Basically the validation
-module is the only artefact that has to be adjusted to individual needs.
+The base file collects all the information needed to synchronize keys and grant
+or revoke server access. All data is stored in a data transfer object that is
+made accessible for downstream modules. The audit module is a passive component
+that only logs the content of the data transfer object. The actual modification
+of the authorized_keys file will be performed by the validation module that can
+be different for various environments. For example in a testing environment you
+wouldnt mind if the users certificate is expired or revoked whereas you would
+in production. The validation module is the only module that has to be adjusted
+to individual needs.
 
 
 Installation
@@ -152,7 +152,7 @@ You have other skills that might help improving the project?
 Dont hesitate contacting me!
 
 
-Bug Report / Feature Request
+Bug report / Feature request
 ----------------------------
 
 see Contact
