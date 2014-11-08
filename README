@@ -30,7 +30,7 @@ pam_openssh_x509 enables you to...
  * gain back control of the key creation process
  * be completeley independent of changes to OpenSSH itself by using a long
    established and supported standard interface
- * simply implement 2 factor authentication
+ * simply implement two factor authentication
  * adopt to different environments by the usage of policies
  * reveal the theft of private keys and making it hard to duplicate them
  * KEEP IT SIMPLE \o/
