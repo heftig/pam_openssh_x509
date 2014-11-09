@@ -21,8 +21,8 @@ components like the LDAP server, logging facility or SSH client doesnt need to b
 the same implementations as used here. For a fast setup The 'samples' directory
 included in the release holds configurations needed for the installation steps.
 Make sure that when copying setup instructions below the path are relative to the
-'samples' directory. All steps have been tested on a Raspberry PI running Arch Linux.
-Pathes might be wrong for other distributions.
+root directory of the release. All steps have been tested on a Raspberry PI running
+Arch Linux. Pathes might be wrong for other distributions.
 
 
 Solution stack
@@ -55,7 +55,7 @@ $ mkdir /var/log/ssh
 $ mkdir /var/log/slapd
 
 3) Copy config
-$ cp syslog-ng.conf /etc/syslog-ng/
+$ cp samples/syslog-ng.conf /etc/syslog-ng/
 
 
 OpenSSH
@@ -69,7 +69,7 @@ to a new directory.
 $ mkdir /usr/local/etc/ssh
 
 3) Copy sshd_config
-$ cp sshd_config /usr/local/etc/ssh/
+$ cp samples/sshd_config /usr/local/etc/ssh/
 
 4) Create directory for users public keys
 $ mkdir /usr/local/etc/ssh/keystore
@@ -102,13 +102,13 @@ $ rm -rf /var/lib/openldap/openldap-data/
 $ mkdir /run/openldap
 
 3) Create new suffix
-$ slapadd -l slapd.ldif -F /etc/openldap/slapd.d/ -n0 
+$ slapadd -l samples/slapd.ldif -F /etc/openldap/slapd.d/ -n0 
 
 4) Start OpenLDAP server
 $ /usr/bin/slapd
 
 5) Create initial directory structure
-$ ldapadd -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f pam_openssh_x509_test_initial.ldif
+$ ldapadd -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f samples/pam_openssh_x509_test_initial.ldif
 
 DIT layout:
 dn: ou=ssh,o=hq
@@ -119,13 +119,13 @@ The groups tree will hold objects that represent the OpenSSH servers whereas the
 tree holds the person objects including their x509 certificates.
 
 6) Add user user sebastian with x509 certificate to person tree
-$ ldapadd -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f pam_openssh_x509_test_add_sebastian.ldif
+$ ldapadd -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f samples/pam_openssh_x509_test_add_sebastian.ldif
 
 7) Add OpenSSH server with identifier 'pam_openssh_x509_test' to groups tree
-$ ldapadd -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f pam_openssh_x509_test_add_openssh_server.ldif
+$ ldapadd -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f samples/pam_openssh_x509_test_add_openssh_server.ldif
 
 8) Grant sebastian access to OpenSSH server with the identifier 'pam_openssh_x509_test'
-$ ldapmodify -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f pam_openssh_x509_test_authorize_sebastian.ldif
+$ ldapmodify -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f samples/pam_openssh_x509_test_authorize_sebastian.ldif
 
 9) Check LDAP content
 $ ldapsearch -LLL -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -b ou=ssh,o=hq objectclass=*
@@ -188,7 +188,7 @@ pam_openssh_x509
 $ make
 
 2) Copy modules
-$ cp build* /lib/security
+$ cp build/* /lib/security
 
 3) Copy pam_openssh_x509 configuration file
 $ cp pam_openssh_x509.conf /usr/local/etc/ssh/
