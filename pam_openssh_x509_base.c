@@ -171,7 +171,7 @@ query_ldap(cfg_t *cfg)
                                             EVP_PKEY *pkey = X509_get_pubkey(x509);
                                             if (pkey != NULL) {
                                                 /* convert public key to ssh format */
-                                                extract_ssh_key(pkey, &(x509_info->ssh_rsa));
+                                                extract_ssh_key(pkey, x509_info);
                                                 EVP_PKEY_free(pkey);
                                             } else {
                                                 LOG_FAIL("X509_get_pubkey(): unable to load public key");

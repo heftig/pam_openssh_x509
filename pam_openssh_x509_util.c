@@ -158,7 +158,8 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
 
         x509_info->uid = NULL;
         x509_info->authorized_keys_file = NULL;
-        x509_info->ssh_rsa = NULL;
+        x509_info->ssh_keytype = NULL;
+        x509_info->ssh_key = NULL;
 
         x509_info->has_cert = 0x86;
         x509_info->serial = NULL;
@@ -286,26 +287,26 @@ check_access(char *group_dn, char *identifier, char *has_access)
 void
 check_signature(char *exchange_with_cert, char *has_valid_signature)
 {
-    /* implement check of signature here */
-    //*has_valid_signature = poc_val_sig;
+    /* TODO: implement check of signature here */
+    *has_valid_signature = 1;
 }
 
 void
 check_expiration(char *exchange_with_cert, char *is_expired)
 {
-    /* implement check for expiration here */
-    //*is_expired = poc_expired;
+    /* TODO: implement check for expiration here */
+    *is_expired = 0;
 }
 
 void
 check_revocation(char *exchange_with_cert, char *is_revoked)
 {
-    /* implement check for revocation here */
-    //*is_revoked = poc_revoked;
+    /* TODO: implement check for revocation here */
+    *is_revoked = 0;
 }
 
 void
-extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
+extract_ssh_key(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
 {
     /* should never happen */
     if (pkey == NULL) {
@@ -316,8 +317,7 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
     switch (EVP_PKEY_type(pkey->type)) {
         case EVP_PKEY_RSA:
             {
-                LOG_MSG("keytype: rsa");
-                char *keyname = "ssh-rsa";
+                x509_info->ssh_keytype = strdup("ssh-rsa");
                 RSA *rsa = EVP_PKEY_get1_RSA(pkey);
                 if (rsa == NULL) {
                     LOG_FAIL("EVP_PKEY_get1_RSA()");
@@ -325,10 +325,9 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
                 }
 
                 /* create authorized_keys entry */
-                int length_keyname, length_exponent, length_modulus, pre_length_blob, post_length_blob;
-                length_keyname = strlen(keyname);
-                length_exponent = BN_num_bytes(rsa->e);
-                length_modulus = BN_num_bytes(rsa->n);
+                int length_keytype = strlen(x509_info->ssh_keytype);
+                int length_exponent = BN_num_bytes(rsa->e);
+                int length_modulus = BN_num_bytes(rsa->n);
 
                 /*
                  * the 4 bytes hold the length of the following value and the 2 extra bytes before
@@ -336,15 +335,18 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
                  * most significant bit of them is set. this is to avoid misinterpreting the value as a
                  * negative number later.
                  */
-                pre_length_blob = 4 + length_keyname + 4 + 1 + length_exponent + 4 + 1 + length_modulus;
+                int pre_length_blob = 4 + length_keytype + 4 + 1 + length_exponent + 4 + 1 + length_modulus;
 
                 /* TODO: SET LIMIT FOR LENGTH OF BLOB TO AVOID STACK OVERFLOW */
-                unsigned char blob[pre_length_blob], *blob_p, blob_buffer[pre_length_blob];
+                unsigned char blob[pre_length_blob];
+                unsigned char blob_buffer[pre_length_blob];
+                unsigned char *blob_p;
+
                 blob_p = blob;
-                PUT_32BIT(blob_p, length_keyname);
+                PUT_32BIT(blob_p, length_keytype);
                 blob_p += 4;
-                memcpy(blob_p, keyname, length_keyname);
-                blob_p += length_keyname;
+                memcpy(blob_p, x509_info->ssh_keytype, length_keytype);
+                blob_p += length_keytype;
                 BN_bn2bin(rsa->e, blob_buffer);
 
                 /* put length of exponent */
@@ -373,12 +375,9 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
                 /* put modulus */
                 memcpy(blob_p, blob_buffer, length_modulus);
                 blob_p += length_modulus;
-                post_length_blob = blob_p - blob;
+                int post_length_blob = blob_p - blob;
 
                 /* encode base64 */
-                int data_in;
-                long data_out;
-                unsigned char *tmp_result = NULL;
 
                 /* create base64 bio */
                 BIO *bio_base64 = BIO_new(BIO_f_base64());
@@ -396,20 +395,17 @@ extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa)
                 }
                 /* create bio chain base64->mem */
                 bio_base64 = BIO_push(bio_base64, bio_mem);
-                data_in = BIO_write(bio_base64, blob, post_length_blob);
+                BIO_write(bio_base64, blob, post_length_blob);
                 BIO_flush(bio_base64);
-                data_out = BIO_get_mem_data(bio_base64, &tmp_result);
+                unsigned char *tmp_result = NULL;
+                long data_out = BIO_get_mem_data(bio_base64, &tmp_result);
 
                 /* store key */
-                char *ssh_pkey = malloc(data_out + 1);
-                if (ssh_pkey != NULL) {
-                    memcpy(ssh_pkey, tmp_result, data_out);
-                    ssh_pkey[data_out] = '\0';
+                x509_info->ssh_key = malloc(data_out + 1);
+                if (x509_info->ssh_key != NULL) {
+                    memcpy(x509_info->ssh_key, tmp_result, data_out);
+                    x509_info->ssh_key[data_out] = '\0';
                 }
-
-                /* probably there is already a pointer to allocated mem => free first */
-                free(*ssh_rsa);
-                *ssh_rsa = ssh_pkey;
 
                 /* clear structures */
                 free_bio_rsa:

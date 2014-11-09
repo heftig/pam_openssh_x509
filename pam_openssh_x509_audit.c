@@ -64,11 +64,15 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     if (rc == PAM_SUCCESS) {
         /* set log facility */
         rc = set_log_facility(x509_info->log_facility);
+        if (rc == -EINVAL) {
+            LOG_FAIL("set_log_facility(%s)", x509_info->log_facility);
+        }
 
         LOG_MSG("===================================================");
         log_string("uid", x509_info->uid);
         log_string("auth_keys_file", x509_info->authorized_keys_file);
-        log_string("ssh_rsa", x509_info->ssh_rsa);
+        log_string("ssh_keytype", x509_info->ssh_keytype);
+        log_string("ssh_key", x509_info->ssh_key);
         LOG_MSG("");
         log_char("has_cert", x509_info->has_cert);
         log_string("serial", x509_info->serial);
@@ -87,7 +91,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         goto auth_err;
 
     } else if (rc == PAM_NO_MODULE_DATA) {
-        LOG_FAIL("pam_get_data(): module data not found or entry is NULL");
+        LOG_FAIL("pam_get_data(): Module data not found or entry is NULL");
         goto auth_err;
     }
 

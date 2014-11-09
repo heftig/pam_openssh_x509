@@ -42,7 +42,8 @@ struct __config_lookup_table {
 struct pam_openssh_x509_info {
     char *uid;
     char *authorized_keys_file;
-    char *ssh_rsa;
+    char *ssh_keytype;
+    char *ssh_key;
 
     char has_cert;
     char *serial;
@@ -71,5 +72,5 @@ void check_access(char *group_dn, char *identifier, char *has_access);
 void check_signature(char *exchange_with_cert, char *has_valid_signature);
 void check_expiration(char *exchange_with_cert, char *is_expired);
 void check_revocation(char *exchange_with_cert, char *is_revoked);
-void extract_ssh_key(EVP_PKEY *pkey, char **ssh_rsa);
+void extract_ssh_key(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info);
 #endif
