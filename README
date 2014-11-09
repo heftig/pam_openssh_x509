@@ -90,7 +90,7 @@ the user object in the LDAP server. Every OpenSSH server will be represented as
 a group in a distinct tree in the LDAP server. Access permission to an OpenSSH
 server is then granted through a group membership. pam_openssh_x509 makes sure
 that the public key of the x509 certificate is synchronized to the server after
-the x509 certificate has been checked (trusted? valid? not revoked?).
+access permissions and the certificate have been checked.
 
 
 Module stack

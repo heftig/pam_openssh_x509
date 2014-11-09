@@ -1,0 +1,5 @@
+dn: cn=pam_openssh_x509_test,ou=groups,ou=ssh,o=hq
+changetype: modify
+add: member
+member: uid=sebastian,ou=person,ou=ssh,o=hq
+

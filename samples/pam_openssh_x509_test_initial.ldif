@@ -1,0 +1,15 @@
+dn: ou=ssh,o=hq
+objectClass: top
+objectClass: organizationalUnit
+ou: ssh
+
+dn: ou=groups,ou=ssh,o=hq
+objectClass: top
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=person,ou=ssh,o=hq
+objectClass: top
+objectClass: organizationalUnit
+ou: person
+

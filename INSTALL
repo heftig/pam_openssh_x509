@@ -1,0 +1,223 @@
+Contents of this file
+---------------------
+ 
+ * Introduction
+ * Solution stack
+ * Prerequisites
+ * syslog-ng
+ * OpenSSH
+ * OpenLDAP
+ * pam_openssh_x509
+ * PuTTY-CAC 0.62
+ * Overview
+
+Introduction
+------------
+
+This file describes how to setup an environment from scratch to get familiar with
+pam_openssh_x509. Note that in a productive environment some steps would be done
+automatically like the creation and distribution of x509 certificates. Also some
+components like the LDAP server, logging facility or SSH client doesnt need to be
+the same implementations as used here. For a fast setup The 'samples' directory
+included in the release holds configurations needed for the installation steps.
+Make sure that when copying setup instructions below the path are relative to the
+'samples' directory. All steps have been tested on a Raspberry PI running Arch Linux.
+Pathes might be wrong for other distributions.
+
+
+Solution stack
+--------------
+
+ * syslog-ng 3.5.6
+ * PAM 1.1.8
+ * OpenSSL 1.0.1j
+ * OpenSSH >= 6.2
+ * libldap 2.4.40
+ * OpenLDAP 2.4.40
+ * libConfuse 2.7
+ * pam_openssh_x509
+ * PuTTY-CAC 0.62
+
+
+Prerequisites
+-------------
+
+Make sure there is a local user 'sebastian'
+
+
+syslog-ng
+---------
+
+1) Install syslog-ng
+
+2) Create directories for log files
+$ mkdir /var/log/ssh
+$ mkdir /var/log/slapd
+
+3) Copy config
+$ cp syslog-ng.conf /etc/syslog-ng/
+
+
+OpenSSH
+-------
+
+1) Install OpenSSH with PAM support
+
+2) We are running a second instance of OpenSSH here in order to fall back
+to the standard one without pam_openssh_x509 support. Configuration goes
+to a new directory.
+$ mkdir /usr/local/etc/ssh
+
+3) Copy sshd_config
+$ cp sshd_config /usr/local/etc/ssh/
+
+4) Create directory for users public keys
+$ mkdir /usr/local/etc/ssh/keystore
+
+In this directory every user gets a subdirectory named after his uid and
+the authorized_keys file will be stored there.
+
+5) Create keystore for 'sebastian'
+$ mkdir /usr/local/etc/ssh/keystore/sebastian
+
+5) As the authorized_keys file will be managed by pam_openssh_x509 we have
+to make sure that noone expect root can change the authorized_keys file
+
+TODO
+
+6) Run OpenSSH
+$ /usr/bin/sshd -f /usr/local/etc/ssh/sshd_config
+
+
+OpenLDAP
+--------
+
+1) Install OpenLDAP
+
+2) Perform the following steps:
+$ rm -f /etc/openldap/slapd.conf
+$ mkdir '/var/lib/openldap/ou=ssh,o=hq'
+$ mv /var/lib/openldap/openldap-data/DB_CONFIG.example /var/lib/openldap/ou\=ssh\,o\=hq/DB_CONFIG
+$ rm -rf /var/lib/openldap/openldap-data/
+$ mkdir /run/openldap
+
+3) Create new suffix
+$ slapadd -l slapd.ldif -F /etc/openldap/slapd.d/ -n0 
+
+4) Start OpenLDAP server
+$ /usr/bin/slapd
+
+5) Create initial directory structure
+$ ldapadd -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f pam_openssh_x509_test_initial.ldif
+
+DIT layout:
+dn: ou=ssh,o=hq
+dn: ou=groups,ou=ssh,o=hq
+dn: ou=person,ou=ssh,o=hq
+
+The groups tree will hold objects that represent the OpenSSH servers whereas the person
+tree holds the person objects including their x509 certificates.
+
+6) Add user user sebastian with x509 certificate to person tree
+$ ldapadd -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f pam_openssh_x509_test_add_sebastian.ldif
+
+7) Add OpenSSH server with identifier 'pam_openssh_x509_test' to groups tree
+$ ldapadd -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f pam_openssh_x509_test_add_openssh_server.ldif
+
+8) Grant sebastian access to OpenSSH server with the identifier 'pam_openssh_x509_test'
+$ ldapmodify -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -f pam_openssh_x509_test_authorize_sebastian.ldif
+
+9) Check LDAP content
+$ ldapsearch -LLL -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -b ou=ssh,o=hq objectclass=*
+dn: ou=ssh,o=hq
+objectClass: top
+objectClass: organizationalUnit
+ou: ssh
+
+dn: ou=groups,ou=ssh,o=hq
+objectClass: top
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=person,ou=ssh,o=hq
+objectClass: top
+objectClass: organizationalUnit
+ou: person
+
+dn: uid=sebastian,ou=person,ou=ssh,o=hq
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: sebastian
+givenName: sebastian
+sn: roland
+cn: sebastian roland
+userCertificate;binary:: MIIC2jCCAcICAQUwDQYJKoZIhvcNAQEEBQAwNDEXMBUGA1UEAwwOM
+ DEtY2FfaW50X3VzZXIxDDAKBgNVBAsMA3NzaDELMAkGA1UECgwCaHEwHhcNMTQxMTA5MTAwNzI5Wh
+ cNMTUwNTA4MTAwNzI5WjAyMRUwEwYDVQQDDAwxMC1lZV91c2VyXzExDDAKBgNVBAsMA3NzaDELMAk
+ GA1UECgwCaHEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDg40XW+Sb1rxxnMQSLPHw1
+ CjQJIyEgBua9zNsZWGoN+iDjiS18c5iXjEoVNih0ECNHXPudO1z4waBMvg680P9+X0u50I9WjDHv5
+ S5Y8YQOEeEBX4FAWBQEtuFTJlTQjZclt88h3bqsSLK1jEzdgtj/nnM+5ANcXpxE/RXmEpbplrGPlE
+ iZWVIb+7Msn3j0vhdtieevqYoaXvUYiBssL2b9FP+qobro6dHwQJ/qpMoT+B6LnrqA82fNVFD+SaB
+ /NLOhl28lKHcN22buaxDlJFgvt5omC84YQEzVEHQ+dUv8Ff0snODzix9TDwWoARFFmGBHhCcaNhO8
+ rkqCmu9J0PdLAgMBAAEwDQYJKoZIhvcNAQEEBQADggEBAAL+sl0h/uiRe5+/57/K3G3Tlk17U+YJY
+ WRMx0axP/SsZxQ+d0Jm4Th4O5zpKWATJQt/3yMBJOIqZL6p6Z2WJsAF6unXWTSEw5ZEyqPu8AHmyR
+ EhQrEntFLMIX0CtJr7kuhclXiT1vQvatQbUtaty1F5sowNx1wgHBi46PLEwWfrXHf+MbAbhObJvOI
+ iNBGhmPYQcRO3Cyp4TXYsrsiFq/Fk8DPKmMovH5zTduPgGkjBlf92Bphu5e8b4zhLMazS0XRlTvXk
+ q3HnVMGNv5+lyuGLkqeEsB9fVsYgm9/dxXfXV4ii6F8hk9cBwooRzfPOM3OB8NwtXv1OxBH0eVaJa
+ IQ=
+
+dn: cn=pam_openssh_x509_test,ou=groups,ou=ssh,o=hq
+objectClass: top
+objectClass: groupOfNames
+cn: pam_openssh_x509_test
+description: pam_openssh_x509_test
+member: uid=__LAST_MAN_STANDING__
+member: uid=sebastian,ou=person,ou=ssh,o=hq
+
+$ ldapsearch -LLL -h localhost -p 389 -D cn=directory_manager,ou=ssh,o=hq -w test123 -b ou=person,ou=ssh,o=hq uid=sebastian memberOf
+dn: uid=sebastian,ou=person,ou=ssh,o=hq
+memberOf: cn=pam_openssh_x509_test,ou=groups,ou=ssh,o=hq
+
+
+pam_openssh_x509
+----------------
+
+1) Build modules
+$ make
+
+2) Copy modules
+$ cp build* /lib/security
+
+3) Copy pam_openssh_x509 configuration file
+$ cp pam_openssh_x509.conf /usr/local/etc/ssh/
+
+4) Copy PAM configuration
+$ cp pam_openssh_x509.conf /etc/pam.d/
+
+
+PuTTY-CAC
+---------
+
+Connect to OpenSSH server using the private key in 10-ee_user_1_key.pem
+
+
+Overview
+--------
+
+Log files:
+/var/log/ssh/sshd_5580.log
+/var/log/ssh/pam_openssh_x509.log
+/var/log/slapd/slapd.log
+
+Keystore:
+/usr/local/etc/ssh/keystore/
+
+Configurations:
+/usr/local/etc/ssh/sshd_config
+/usr/local/etc/ssh/pam_openssh_x509.conf
+/etc/pam.d/sshd
+/etc/syslog-ng/syslog-ng.conf
+
+#EOF

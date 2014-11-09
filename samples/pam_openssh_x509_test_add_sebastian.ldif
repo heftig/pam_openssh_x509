@@ -1,0 +1,27 @@
+dn: uid=sebastian,ou=person,ou=ssh,o=hq
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: sebastian
+givenName: sebastian
+sn: roland
+cn: sebastian roland
+userCertificate;binary:: 
+ MIIC2jCCAcICAQUwDQYJKoZIhvcNAQEEBQAwNDEXMBUGA1UEAwwOMDEtY2FfaW50
+ X3VzZXIxDDAKBgNVBAsMA3NzaDELMAkGA1UECgwCaHEwHhcNMTQxMTA5MTAwNzI5
+ WhcNMTUwNTA4MTAwNzI5WjAyMRUwEwYDVQQDDAwxMC1lZV91c2VyXzExDDAKBgNV
+ BAsMA3NzaDELMAkGA1UECgwCaHEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+ AoIBAQDg40XW+Sb1rxxnMQSLPHw1CjQJIyEgBua9zNsZWGoN+iDjiS18c5iXjEoV
+ Nih0ECNHXPudO1z4waBMvg680P9+X0u50I9WjDHv5S5Y8YQOEeEBX4FAWBQEtuFT
+ JlTQjZclt88h3bqsSLK1jEzdgtj/nnM+5ANcXpxE/RXmEpbplrGPlEiZWVIb+7Ms
+ n3j0vhdtieevqYoaXvUYiBssL2b9FP+qobro6dHwQJ/qpMoT+B6LnrqA82fNVFD+
+ SaB/NLOhl28lKHcN22buaxDlJFgvt5omC84YQEzVEHQ+dUv8Ff0snODzix9TDwWo
+ ARFFmGBHhCcaNhO8rkqCmu9J0PdLAgMBAAEwDQYJKoZIhvcNAQEEBQADggEBAAL+
+ sl0h/uiRe5+/57/K3G3Tlk17U+YJYWRMx0axP/SsZxQ+d0Jm4Th4O5zpKWATJQt/
+ 3yMBJOIqZL6p6Z2WJsAF6unXWTSEw5ZEyqPu8AHmyREhQrEntFLMIX0CtJr7kuhc
+ lXiT1vQvatQbUtaty1F5sowNx1wgHBi46PLEwWfrXHf+MbAbhObJvOIiNBGhmPYQ
+ cRO3Cyp4TXYsrsiFq/Fk8DPKmMovH5zTduPgGkjBlf92Bphu5e8b4zhLMazS0XRl
+ TvXkq3HnVMGNv5+lyuGLkqeEsB9fVsYgm9/dxXfXV4ii6F8hk9cBwooRzfPOM3OB
+ 8NwtXv1OxBH0eVaJaIQ=
+

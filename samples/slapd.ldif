@@ -1,0 +1,71 @@
+#############
+# cn=config #
+#############
+dn: cn=config
+objectClass: olcGlobal
+cn: config
+olcArgsFile: /run/openldap/slapd.args
+olcPidFile: /run/openldap/slapd.pid
+olcLogLevel: stats
+
+#############
+# cn=module #
+#############
+dn: cn=module,cn=config
+objectClass: olcModuleList
+cn: module
+olcModulePath: /usr/lib/openldap
+olcModuleLoad: memberof
+
+#############
+# cn=schema #
+#############
+dn: cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: schema
+
+include: file:///etc/openldap/schema/core.ldif
+include: file:///etc/openldap/schema/cosine.ldif
+include: file:///etc/openldap/schema/inetorgperson.ldif
+
+################
+# olcBackend=x #
+################
+
+#################
+# olcDatabase=x #
+#################
+
+# olcDatabase=frontend
+dn: olcDatabase=frontend,cn=config
+objectClass: olcDatabaseConfig
+olcDatabase: frontend
+
+# olcDatabase=config
+dn: olcDatabase=config,cn=config
+objectClass: olcDatabaseConfig
+olcDatabase: config
+olcRootDN: cn=directory_manager,cn=config
+olcRootPW: {SSHA}qmkWtIXexBkldOPs1JlAqD64u/3Wl4S4 
+
+# olcDatabase=hdb
+dn: olcDatabase=hdb,cn=config
+objectClass: olcDatabaseConfig
+objectClass: olcHdbConfig
+olcDatabase: hdb
+olcSuffix: ou=ssh,o=hq
+olcRootDN: cn=directory_manager,ou=ssh,o=hq
+olcRootPW: {SSHA}qmkWtIXexBkldOPs1JlAqD64u/3Wl4S4
+olcDbDirectory:	/var/lib/openldap/ou=ssh,o=hq
+olcDbIndex: default eq
+olcDbIndex: uid
+olcDbIndex: objectclass pres,eq
+
+# add memberof overlay
+dn: olcOverlay=memberof,olcDatabase={1}hdb,cn=config
+objectClass: olcMemberOf
+olcOverlay: memberof
+olcMemberOfGroupOC: groupOfNames
+olcMemberOfMemberAD: member
+olcMemberOfMemberOfAD: memberOf
+

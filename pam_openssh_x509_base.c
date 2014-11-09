@@ -340,16 +340,16 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     cfg_opt_t opts[] = { 
         CFG_STR("log_facility", NULL, CFGF_NODEFAULT),
         CFG_STR("ldap_uri", "ldap://localhost:389", CFGF_NONE),
-        CFG_STR("ldap_bind_dn", "cn=directory_manager,dc=ssh,dc=hq", CFGF_NONE),
+        CFG_STR("ldap_bind_dn", "cn=directory_manager,ou=ssh,o=hq", CFGF_NONE),
         CFG_STR("ldap_pwd", "test123", CFGF_NONE),
-        CFG_STR("ldap_base", "ou=person,dc=ssh,dc=hq", CFGF_NONE),
+        CFG_STR("ldap_base", "ou=person,ou=ssh,o=hq", CFGF_NONE),
         CFG_INT_CB("ldap_scope", config_lookup(LIBLDAP, "LDAP_SCOPE_ONE"), CFGF_NONE, &cfg_str_to_int_parser_libldap),
         CFG_INT("ldap_search_timeout", 5, CFGF_NONE),
         CFG_INT_CB("ldap_version", config_lookup(LIBLDAP, "LDAP_VERSION3"), CFGF_NONE, &cfg_str_to_int_parser_libldap),
         CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
         CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
         CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
-        CFG_STR("ldap_group_identifier", "ssh_test.ssh.hq", CFGF_NONE),
+        CFG_STR("ldap_group_identifier", "pam_openssh_x509_test", CFGF_NONE),
         CFG_STR("authorized_keys_file", "/usr/local/etc/ssh/keystore/%u/authorized_keys", CFGF_NONE),
         CFG_END()
     }; 
