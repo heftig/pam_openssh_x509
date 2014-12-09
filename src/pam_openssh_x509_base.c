@@ -32,7 +32,7 @@
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>
 
-#include "include/pam_openssh_x509.h"
+#include "pam_openssh_x509.h"
 
 #define MAX_SEARCH_FILTER_BUFFER_SIZE       512
 #define CERT_INFO_STRING_BUFFER_SIZE        1024
@@ -44,8 +44,11 @@ static struct pam_openssh_x509_info *x509_info = NULL;
 static void
 cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
 {
-    // THIS FUNCTION SHOULD BE CALLED THROUGH PAM_END() WHICH UNFORTUNATELY IS NOT HAPPENING FOR OPENSSH
-    // TODO: USE IF SUPPORTED
+    /*
+     * TODO: This function should be called through pam_end() which is unfortunately
+     *       not happening for OpenSSH right now. Report to OpenSSH devs and implement
+     *       if fixed
+     */
 }
 
 static void
@@ -118,8 +121,8 @@ query_ldap(cfg_t *cfg)
                 switch (msgtype = ldap_msgtype(ldap_result)) {
                     case LDAP_RES_SEARCH_ENTRY:
                         {
-                            char *entry_dn = ldap_get_dn(ldap_handle, ldap_result); 
-                            LOG_MSG("user_dn: %s", entry_dn);
+                            char *user_dn = ldap_get_dn(ldap_handle, ldap_result); 
+                            LOG_MSG("user_dn: %s", user_dn);
                             /*
                              * iterate over all requested attributes
                              */

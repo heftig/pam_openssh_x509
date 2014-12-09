@@ -21,7 +21,7 @@
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>
 
-#include "include/pam_openssh_x509.h"
+#include "pam_openssh_x509.h"
 
 static char *unset = "unset";
 

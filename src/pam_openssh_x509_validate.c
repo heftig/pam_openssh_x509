@@ -21,7 +21,7 @@
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>
 
-#include "include/pam_openssh_x509.h"
+#include "pam_openssh_x509.h"
 
 static int 
 authorized(struct pam_openssh_x509_info *x509_info)
@@ -44,7 +44,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
             LOG_FAIL("set_log_facility(%s)", x509_info->log_facility);
         }
         
-        /* only modify authorized_keys file if  LDAP server could be queried */
+        /* only modify authorized_keys file if LDAP server could be queried */
         if (x509_info->directory_online == 1) {
             if (authorized(x509_info)) {
                 LOG_SUCCESS("Access granted!", x509_info->uid);

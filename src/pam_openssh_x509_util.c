@@ -19,7 +19,7 @@
 #include <syslog.h>
 #include <ldap.h>
 
-#include "include/pam_openssh_x509.h"
+#include "pam_openssh_x509.h"
 
 #define DEFAULT_LOG_FACILITY LOG_LOCAL1
 #define LOG_BUFFER_SIZE 2048
