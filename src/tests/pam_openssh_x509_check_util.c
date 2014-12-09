@@ -1,4 +1,5 @@
 #include <check.h>
+
 #include "pam_openssh_x509_check.h"
 #include "../pam_openssh_x509.h"
 
