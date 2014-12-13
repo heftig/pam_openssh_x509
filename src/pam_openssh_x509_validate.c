@@ -66,7 +66,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
                     }
 
                 } else {
-                    LOG_FAIL("Cannot synchronize keys. Either key or keytpe not known");
+                    LOG_FAIL("Cannot synchronize keys. Either key or keytype not known");
                     goto auth_err;
                 }
 

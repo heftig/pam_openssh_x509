@@ -34,7 +34,7 @@
 
 #include "pam_openssh_x509.h"
 
-#define MAX_SEARCH_FILTER_BUFFER_SIZE       512
+#define SEARCH_FILTER_BUFFER_SIZE           512
 #define CERT_INFO_STRING_BUFFER_SIZE        1024
 #define UID_BUFFER_SIZE                     33
 #define AUTHORIZED_KEYS_FILE_BUFFER_SIZE    1024
@@ -68,17 +68,11 @@ query_ldap(cfg_t *cfg)
     char *attrs[] = { cfg_getstr(cfg, "ldap_attr_cert"), cfg_getstr(cfg, "ldap_attr_access"), '\0' };
     struct berval cred = { strlen(cfg_getstr(cfg, "ldap_pwd")), cfg_getstr(cfg, "ldap_pwd") };
 
-    /* check length of search filter buffer */
-    unsigned int search_filter_buffer = strlen(cfg_getstr(cfg, "ldap_attr_rdn_person")) + strlen("=") + strlen(x509_info->uid) + 1;
-    if (search_filter_buffer > MAX_SEARCH_FILTER_BUFFER_SIZE) {
-        LOG_FAIL("size of ldap search filter buffer exceeds maximum allowed size");
-        return;
-    }
     /* construct filter */
-    char filter[search_filter_buffer];
-    strcpy(filter, cfg_getstr(cfg, "ldap_attr_rdn_person"));
-    strcat(filter, "=");
-    strcat(filter, x509_info->uid);
+    char filter[SEARCH_FILTER_BUFFER_SIZE];
+    strncpy(filter, cfg_getstr(cfg, "ldap_attr_rdn_person"), sizeof(filter));
+    strncat(filter, "=", sizeof(filter) - strlen(filter) - 1);
+    strncat(filter, x509_info->uid, sizeof(filter) - strlen(filter) - 1);
 
     /* init handle */
     rc = ldap_initialize(&ldap_handle, cfg_getstr(cfg, "ldap_uri"));

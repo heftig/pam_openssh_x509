@@ -1,2 +1,3 @@
 *.so
+src/tests/pam_openssh_x509_check
 
