@@ -82,6 +82,10 @@ static struct __config_lookup_table *_config_lookup[] = { syslog_facilities, lib
 long int
 config_lookup(const enum __sections sec, const char *key)
 {
+    if (sec != SYSLOG && sec != LIBLDAP) {
+        return -EINVAL;
+    }
+
     if (key == NULL) {
         return -EINVAL;
     }
@@ -199,7 +203,7 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
 void
 percent_expand (char token, char *subst, char *src, char *dst, int dst_length)
 {
-    if (subst != NULL && src != NULL && dst != NULL) {
+    if (subst != NULL && src != NULL && dst != NULL && dst_length > 0) {
         bool cdt = 0;
         int j = 0;
         size_t strlen_subst = strlen(subst);
@@ -230,6 +234,9 @@ percent_expand (char token, char *subst, char *src, char *dst, int dst_length)
 void
 release_config (cfg_t *cfg)
 {
+    if (cfg == NULL) {
+        return;
+    }
     /* free values of each option */
     cfg_opt_t *opt_ptr;
     for (opt_ptr = cfg->opts; opt_ptr->name != NULL; opt_ptr++) {
@@ -271,15 +278,21 @@ check_access(char *group_dn, char *identifier, char *has_access)
      * copy group_dn to char array in order to make sure that
      * string is mutable as strtok will try to change it
      */
-    char group_dn_mutable[GROUP_DN_BUFFER_SIZE];
-    strncpy(group_dn_mutable, group_dn, GROUP_DN_BUFFER_SIZE);
+    if (group_dn != NULL && identifier != NULL && has_access != NULL) {
+        char group_dn_mutable[GROUP_DN_BUFFER_SIZE];
+        strncpy(group_dn_mutable, group_dn, GROUP_DN_BUFFER_SIZE);
 
-    char *token = strtok(group_dn_mutable, "=");
-    token = strtok(NULL, ",");
-    /* token now contains rdn value of group only */
-    if (strcmp(token, identifier) == 0) {
-        *has_access = 1;
-        return;
+        char *token = strtok(group_dn_mutable, "=");
+        if (token != NULL) {
+            token = strtok(NULL, ",");
+            if (token != NULL) {
+                /* token now contains rdn value of group only */
+                if (strcmp(token, identifier) == 0) {
+                    *has_access = 1;
+                    return;
+                }
+            }
+        }
     }
     *has_access = 0;
 }
@@ -308,9 +321,13 @@ check_revocation(char *exchange_with_cert, char *is_revoked)
 void
 extract_ssh_key(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
 {
-    /* should never happen */
     if (pkey == NULL) {
         LOG_FAIL("extract_ssh_key(): pkey == NULL");
+        return;
+    }
+
+    if (x509_info == NULL) {
+        LOG_FAIL("extract_ssh_key(): x509_info == NULL");
         return;
     }
 
@@ -340,9 +357,8 @@ extract_ssh_key(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
                 /* TODO: SET LIMIT FOR LENGTH OF BLOB TO AVOID STACK OVERFLOW */
                 unsigned char blob[pre_length_blob];
                 unsigned char blob_buffer[pre_length_blob];
-                unsigned char *blob_p;
 
-                blob_p = blob;
+                unsigned char *blob_p = blob;
                 PUT_32BIT(blob_p, length_keytype);
                 blob_p += 4;
                 memcpy(blob_p, x509_info->ssh_keytype, length_keytype);

@@ -27,6 +27,12 @@ struct test_percent_expand {
     char *exp_result;
 };
 
+struct test_check_access {
+    char *group_dn;
+    char *identifier;
+    char exp_result;
+};
+
 /* function declarations */
 Suite *make_util_suite(void);
 #endif
