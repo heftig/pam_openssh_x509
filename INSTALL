@@ -37,7 +37,7 @@ Solution stack
  * libConfuse 2.7
  * pam_openssh_x509
  * PuTTY-CAC 0.62
-
+ * check-0.9.14
 
 Prerequisites
 -------------
@@ -80,12 +80,12 @@ the authorized_keys file will be stored there.
 5) Create keystore for 'sebastian'
 $ mkdir /usr/local/etc/ssh/keystore/sebastian
 
-5) As the authorized_keys file will be managed by pam_openssh_x509 we have
+6) As the authorized_keys file will be managed by pam_openssh_x509 we have
 to make sure that noone expect root can change the authorized_keys file
 
 TODO
 
-6) Run OpenSSH
+7) Run OpenSSH
 $ /usr/bin/sshd -f /usr/local/etc/ssh/sshd_config
 
 
@@ -191,10 +191,10 @@ $ make
 $ cp build/* /lib/security
 
 3) Copy pam_openssh_x509 configuration file
-$ cp pam_openssh_x509.conf /usr/local/etc/ssh/
+$ cp samples/pam_openssh_x509.conf /usr/local/etc/ssh/
 
 4) Copy PAM configuration
-$ cp pam_openssh_x509.conf /etc/pam.d/
+$ cp samples/sshd /etc/pam.d/
 
 
 PuTTY-CAC
