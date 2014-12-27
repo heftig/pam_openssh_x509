@@ -6,9 +6,11 @@
 *.log
 *.trs
 Makefile
+libtool
 tests/pam_openssh_x509_check
 autom4te.cache
 autoscan.log
+config.cache
 config.log
 config.status
 configure.scan

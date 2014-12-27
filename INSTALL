@@ -190,7 +190,7 @@ pam_openssh_x509
 ----------------
 
 1) Build and install modules
-$ ./configure --libdir=/lib/security
+$ ./configure --libdir=/lib/security --disable-dependency-tracking
 $ make
 $ make check
 $ su

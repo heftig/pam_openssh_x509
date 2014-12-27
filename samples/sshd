@@ -1,5 +1,4 @@
 auth	requisite	pam_openssh_x509_base.so	    /usr/local/etc/ssh/pam_openssh_x509.conf
 auth	optional	pam_openssh_x509_audit.so
 auth	required	pam_openssh_x509_validate.so
-account requisite   pam_permit.so
 
