@@ -47,9 +47,9 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         /* only modify authorized_keys file if LDAP server could be queried */
         if (x509_info->directory_online == 1) {
             if (authorized(x509_info)) {
-                LOG_SUCCESS("Access granted!", x509_info->uid);
+                LOG_SUCCESS("Access granted!");
                 LOG_MSG("Synchronizing keys");
-                if (x509_info->ssh_keytype != NULL || x509_info->ssh_key != NULL) {
+                if (x509_info->ssh_keytype != NULL && x509_info->ssh_key != NULL) {
                     /* write key to authorized_keys file */
                     FILE *fd_auth_keys = fopen(x509_info->authorized_keys_file, "w");
                     if (fd_auth_keys != NULL) {
@@ -71,7 +71,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
                 }
 
             } else {
-                LOG_FAIL("Access denied!", x509_info->uid);
+                LOG_FAIL("Access denied!");
                 LOG_MSG("Truncating authorized_keys file");
                 FILE *fd_auth_keys = fopen(x509_info->authorized_keys_file, "w");
                 if (fd_auth_keys != NULL) {
