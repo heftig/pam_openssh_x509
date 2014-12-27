@@ -5,6 +5,7 @@
 .dirstamp
 *.log
 *.trs
+Makefile
 tests/pam_openssh_x509_check
 autom4te.cache
 autoscan.log
@@ -14,4 +15,5 @@ configure.scan
 stamp-h1
 src/.deps
 src/.libs
+tests/.deps
 
