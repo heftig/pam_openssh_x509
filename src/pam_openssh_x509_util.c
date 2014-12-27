@@ -82,17 +82,14 @@ static struct __config_lookup_table *_config_lookup[] = { syslog_facilities, lib
 long int
 config_lookup(const enum __sections sec, const char *key)
 {
-    if (sec != SYSLOG && sec != LIBLDAP) {
-        return -EINVAL;
-    }
-
-    if (key == NULL) {
-        return -EINVAL;
-    }
-    struct __config_lookup_table *lookup_ptr;
-    for (lookup_ptr = _config_lookup[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
-        if (strcasecmp(lookup_ptr->name, key) == 0) {
-            return lookup_ptr->value;
+    if (sec == SYSLOG || sec == LIBLDAP) {
+        if (key != NULL) {
+            struct __config_lookup_table *lookup_ptr;
+            for (lookup_ptr = _config_lookup[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
+                if (strcasecmp(lookup_ptr->name, key) == 0) {
+                    return lookup_ptr->value;
+                }
+            }
         }
     }
     return -EINVAL;

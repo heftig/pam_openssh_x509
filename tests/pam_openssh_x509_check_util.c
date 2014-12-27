@@ -150,8 +150,14 @@ START_TEST
 {
     int exp_result = config_lookup(10, "foo");
     ck_assert_int_eq(-EINVAL, exp_result);
+    exp_result = config_lookup(10, NULL);
+    ck_assert_int_eq(-EINVAL, exp_result);
+    exp_result = config_lookup(10, "LOG_FTP");
+    ck_assert_int_eq(-EINVAL, exp_result);
     exp_result = config_lookup(SYSLOG, "foo");
     ck_assert_int_eq(-EINVAL, exp_result);
+    exp_result = config_lookup(SYSLOG, "LOG_FTP");
+    ck_assert_int_eq(LOG_FTP, exp_result);
     exp_result = config_lookup(SYSLOG, NULL);
     ck_assert_int_eq(-EINVAL, exp_result);
     exp_result = config_lookup(LIBLDAP, NULL);
