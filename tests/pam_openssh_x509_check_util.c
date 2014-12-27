@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "pam_openssh_x509_check.h"
-#include "../pam_openssh_x509.h"
+#include "../src/pam_openssh_x509.h"
 
 #define BUFFER_SIZE 2048
 

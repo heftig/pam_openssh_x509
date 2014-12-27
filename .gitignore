@@ -1,3 +1,17 @@
 *.so
-src/tests/pam_openssh_x509_check
+*.la
+*.lo
+*.o
+.dirstamp
+*.log
+*.trs
+tests/pam_openssh_x509_check
+autom4te.cache
+autoscan.log
+config.log
+config.status
+configure.scan
+stamp-h1
+src/.deps
+src/.libs
 
