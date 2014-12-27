@@ -11,6 +11,7 @@ Contents of this file
  * PuTTY-CAC 0.62
  * Overview
 
+
 Introduction
 ------------
 
@@ -37,7 +38,8 @@ Solution stack
  * libConfuse 2.7
  * pam_openssh_x509
  * PuTTY-CAC 0.62
- * check-0.9.14
+ * check 0.9.14
+
 
 Prerequisites
 -------------
@@ -65,7 +67,7 @@ OpenSSH
 
 2) We are running a second instance of OpenSSH here in order to fall back
 to the standard one without pam_openssh_x509 support. Configuration goes
-to a new directory.
+to a new directory
 $ mkdir /usr/local/etc/ssh
 
 3) Copy sshd_config
@@ -75,7 +77,7 @@ $ cp samples/sshd_config /usr/local/etc/ssh/
 $ mkdir /usr/local/etc/ssh/keystore
 
 In this directory every user gets a subdirectory named after his uid and
-the authorized_keys file will be stored there.
+the authorized_keys file will be stored there
 
 5) Create keystore for 'sebastian'
 $ mkdir /usr/local/etc/ssh/keystore/sebastian
@@ -87,6 +89,9 @@ TODO
 
 7) Run OpenSSH
 $ /usr/bin/sshd -f /usr/local/etc/ssh/sshd_config
+
+8) (optional) Make sure PAM support is disabled for other OpenSSH instances
+running on the same machine as they would use the modules as well
 
 
 OpenLDAP
@@ -184,16 +189,17 @@ memberOf: cn=pam_openssh_x509_test,ou=groups,ou=ssh,o=hq
 pam_openssh_x509
 ----------------
 
-1) Build modules
+1) Build and install modules
+$ ./configure --libdir=/lib/security
 $ make
+$ make check
+$ su
+$ make install
 
-2) Copy modules
-$ cp build/* /lib/security
-
-3) Copy pam_openssh_x509 configuration file
+2) Copy pam_openssh_x509 configuration file
 $ cp samples/pam_openssh_x509.conf /usr/local/etc/ssh/
 
-4) Copy PAM configuration
+3) Copy PAM configuration
 $ cp samples/sshd /etc/pam.d/
 
 
