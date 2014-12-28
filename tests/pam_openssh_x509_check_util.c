@@ -56,7 +56,7 @@ START_TEST
     char token = _test_percent_expand_lt[_i].token;
     char *subst = _test_percent_expand_lt[_i].subst;
     char *src = _test_percent_expand_lt[_i].src;
-    unsigned int dst_length = _test_percent_expand_lt[_i].dst_length;
+    int dst_length = _test_percent_expand_lt[_i].dst_length;
     char *exp_result = _test_percent_expand_lt[_i].exp_result;
 
     char dst[dst_length];
