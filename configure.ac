@@ -11,8 +11,6 @@ LT_INIT([disable-static dlopen pic-only])
 
 # Checks for programs.
 AC_PROG_CC
-# even if its obsolete... legacy systems will complain if its missing
-AM_PROG_CC_C_O
 
 # Checks for libraries.
 PKG_CHECK_MODULES([libcheck], [check >= 0.9.14], [], [AC_MSG_ERROR([cannot find libcheck (>= 0.9.14)])])
