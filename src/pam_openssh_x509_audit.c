@@ -31,6 +31,7 @@ log_string(char *attr, char *value)
     if (attr == NULL) {
         return;
     }
+
     if (value == NULL) {
         value = unset;
     }
@@ -43,15 +44,16 @@ log_char(char *attr, char value)
     if (attr == NULL) {
         return;
     }
+
     char *value_string = NULL;
     if (value == 0x86) {
         value_string = unset;
+
+    } else if (value == 1) {
+        value_string = "true";
+
     } else {
-        if (value == 1) {
-            value_string = "true";
-        } else {
-            value_string = "false";
-        }
+        value_string = "false";
     }
     LOG_MSG("%s: %s", attr, value_string);
 }
