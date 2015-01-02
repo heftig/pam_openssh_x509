@@ -116,7 +116,15 @@ query_ldap(cfg_t *cfg)
                     case LDAP_RES_SEARCH_ENTRY:
                         {
                             char *user_dn = ldap_get_dn(ldap_handle, ldap_result); 
-                            LOG_MSG("user_dn: %s", user_dn);
+                            if (user_dn == NULL) {
+                                /*
+                                 * cannot access ldap_handle->ld_errno as structure
+                                 * is opaque...
+                                 */
+                                LOG_FAIL("ldap_get_dn(): '%s'", "user_dn == NULL");
+                            } else {
+                                LOG_MSG("user_dn: %s", user_dn);
+                            }
                             /*
                              * iterate over all requested attributes
                              */
