@@ -69,8 +69,8 @@ END_TEST
 START_TEST
 (test_extract_ssh_key)
 {
-    char *directory = "openssh_keys";
-    char *oneliner = "openssh_keys/ssh_rsa.txt";
+    char *directory = KEYSDIR;
+    char *oneliner = KEYSDIR "/ssh_rsa.txt";
 
     FILE *fh_oneliner = fopen(oneliner, "r");
     if (fh_oneliner != NULL) {

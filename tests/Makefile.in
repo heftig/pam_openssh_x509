@@ -95,9 +95,9 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__dirstamp = $(am__leading_dot)dirstamp
 am_pam_openssh_x509_check_OBJECTS =  \
-	pam_openssh_x509_check_main.$(OBJEXT) \
-	pam_openssh_x509_check_util.$(OBJEXT) \
-	../src/pam_openssh_x509_util.$(OBJEXT)
+	pam_openssh_x509_check-pam_openssh_x509_check_main.$(OBJEXT) \
+	pam_openssh_x509_check-pam_openssh_x509_check_util.$(OBJEXT) \
+	../src/pam_openssh_x509_check-pam_openssh_x509_util.$(OBJEXT)
 pam_openssh_x509_check_OBJECTS = $(am_pam_openssh_x509_check_OBJECTS)
 am__DEPENDENCIES_1 =
 pam_openssh_x509_check_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -502,7 +502,8 @@ pam_openssh_x509_check_SOURCES = pam_openssh_x509_check_main.c \
                                  pam_openssh_x509_check.h \
                                  ../src/pam_openssh_x509_util.c
 
-pam_openssh_x509_check_LDADD = $(LDADD_CHECK)
+pam_openssh_x509_check_LDADD = ${LDADD_CHECK}
+pam_openssh_x509_check_CPPFLAGS = -DKEYSDIR="\"${srcdir}/openssh_keys\""
 all: all-am
 
 .SUFFIXES:
@@ -552,8 +553,8 @@ clean-checkPROGRAMS:
 ../src/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) ../src/$(DEPDIR)
 	@: > ../src/$(DEPDIR)/$(am__dirstamp)
-../src/pam_openssh_x509_util.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
+../src/pam_openssh_x509_check-pam_openssh_x509_util.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 
 pam_openssh_x509_check$(EXEEXT): $(pam_openssh_x509_check_OBJECTS) $(pam_openssh_x509_check_DEPENDENCIES) $(EXTRA_pam_openssh_x509_check_DEPENDENCIES) 
 	@rm -f pam_openssh_x509_check$(EXEEXT)
@@ -566,9 +567,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/pam_openssh_x509_util.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_openssh_x509_check_main.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_openssh_x509_check_util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_util.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -593,6 +594,48 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+pam_openssh_x509_check-pam_openssh_x509_check_main.o: pam_openssh_x509_check_main.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pam_openssh_x509_check-pam_openssh_x509_check_main.o -MD -MP -MF $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_main.Tpo -c -o pam_openssh_x509_check-pam_openssh_x509_check_main.o `test -f 'pam_openssh_x509_check_main.c' || echo '$(srcdir)/'`pam_openssh_x509_check_main.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_main.Tpo $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_main.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pam_openssh_x509_check_main.c' object='pam_openssh_x509_check-pam_openssh_x509_check_main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pam_openssh_x509_check-pam_openssh_x509_check_main.o `test -f 'pam_openssh_x509_check_main.c' || echo '$(srcdir)/'`pam_openssh_x509_check_main.c
+
+pam_openssh_x509_check-pam_openssh_x509_check_main.obj: pam_openssh_x509_check_main.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pam_openssh_x509_check-pam_openssh_x509_check_main.obj -MD -MP -MF $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_main.Tpo -c -o pam_openssh_x509_check-pam_openssh_x509_check_main.obj `if test -f 'pam_openssh_x509_check_main.c'; then $(CYGPATH_W) 'pam_openssh_x509_check_main.c'; else $(CYGPATH_W) '$(srcdir)/pam_openssh_x509_check_main.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_main.Tpo $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_main.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pam_openssh_x509_check_main.c' object='pam_openssh_x509_check-pam_openssh_x509_check_main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pam_openssh_x509_check-pam_openssh_x509_check_main.obj `if test -f 'pam_openssh_x509_check_main.c'; then $(CYGPATH_W) 'pam_openssh_x509_check_main.c'; else $(CYGPATH_W) '$(srcdir)/pam_openssh_x509_check_main.c'; fi`
+
+pam_openssh_x509_check-pam_openssh_x509_check_util.o: pam_openssh_x509_check_util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pam_openssh_x509_check-pam_openssh_x509_check_util.o -MD -MP -MF $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_util.Tpo -c -o pam_openssh_x509_check-pam_openssh_x509_check_util.o `test -f 'pam_openssh_x509_check_util.c' || echo '$(srcdir)/'`pam_openssh_x509_check_util.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_util.Tpo $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pam_openssh_x509_check_util.c' object='pam_openssh_x509_check-pam_openssh_x509_check_util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pam_openssh_x509_check-pam_openssh_x509_check_util.o `test -f 'pam_openssh_x509_check_util.c' || echo '$(srcdir)/'`pam_openssh_x509_check_util.c
+
+pam_openssh_x509_check-pam_openssh_x509_check_util.obj: pam_openssh_x509_check_util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pam_openssh_x509_check-pam_openssh_x509_check_util.obj -MD -MP -MF $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_util.Tpo -c -o pam_openssh_x509_check-pam_openssh_x509_check_util.obj `if test -f 'pam_openssh_x509_check_util.c'; then $(CYGPATH_W) 'pam_openssh_x509_check_util.c'; else $(CYGPATH_W) '$(srcdir)/pam_openssh_x509_check_util.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_util.Tpo $(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_check_util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pam_openssh_x509_check_util.c' object='pam_openssh_x509_check-pam_openssh_x509_check_util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pam_openssh_x509_check-pam_openssh_x509_check_util.obj `if test -f 'pam_openssh_x509_check_util.c'; then $(CYGPATH_W) 'pam_openssh_x509_check_util.c'; else $(CYGPATH_W) '$(srcdir)/pam_openssh_x509_check_util.c'; fi`
+
+../src/pam_openssh_x509_check-pam_openssh_x509_util.o: ../src/pam_openssh_x509_util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ../src/pam_openssh_x509_check-pam_openssh_x509_util.o -MD -MP -MF ../src/$(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_util.Tpo -c -o ../src/pam_openssh_x509_check-pam_openssh_x509_util.o `test -f '../src/pam_openssh_x509_util.c' || echo '$(srcdir)/'`../src/pam_openssh_x509_util.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_util.Tpo ../src/$(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../src/pam_openssh_x509_util.c' object='../src/pam_openssh_x509_check-pam_openssh_x509_util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ../src/pam_openssh_x509_check-pam_openssh_x509_util.o `test -f '../src/pam_openssh_x509_util.c' || echo '$(srcdir)/'`../src/pam_openssh_x509_util.c
+
+../src/pam_openssh_x509_check-pam_openssh_x509_util.obj: ../src/pam_openssh_x509_util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ../src/pam_openssh_x509_check-pam_openssh_x509_util.obj -MD -MP -MF ../src/$(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_util.Tpo -c -o ../src/pam_openssh_x509_check-pam_openssh_x509_util.obj `if test -f '../src/pam_openssh_x509_util.c'; then $(CYGPATH_W) '../src/pam_openssh_x509_util.c'; else $(CYGPATH_W) '$(srcdir)/../src/pam_openssh_x509_util.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_util.Tpo ../src/$(DEPDIR)/pam_openssh_x509_check-pam_openssh_x509_util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../src/pam_openssh_x509_util.c' object='../src/pam_openssh_x509_check-pam_openssh_x509_util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_openssh_x509_check_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ../src/pam_openssh_x509_check-pam_openssh_x509_util.obj `if test -f '../src/pam_openssh_x509_util.c'; then $(CYGPATH_W) '../src/pam_openssh_x509_util.c'; else $(CYGPATH_W) '$(srcdir)/../src/pam_openssh_x509_util.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
