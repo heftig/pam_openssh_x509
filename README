@@ -7,7 +7,6 @@ Contents of this file
  * Installation
  * Contribute
  * Bug report / Feature request
- * Donate
  * License
  * Contact
 
@@ -157,16 +156,6 @@ Bug report / Feature request
 see Contact
 
 
-Donate
-------
-
-Wanna give something back? Donate me...
-
- * an IRC bouncer
- * a shell
- * topsite access with unlimited ratio ;)
-
-
 License
 -------
 
@@ -180,7 +169,7 @@ Questions? Suggestions? Just wanna say Hi?
 Reach me over the following channels:
 
 * IRC: #pam_openssh_x509 @freenode /query flix
-* E-Mail: seroland86<at>gmail.com
+* E-Mail: seroland86@gmail.com
 * Github: https://github.com/flix-
 
 #EOF
