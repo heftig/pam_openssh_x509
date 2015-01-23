@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Sebastian Roland <seroland86@gmail.com>
+ * Copyright (C) 2014-2015 Sebastian Roland <seroland86@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -45,10 +45,40 @@ static void
 cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
 {
     /*
-     * TODO: This function should be called through pam_end() which is unfortunately
-     *       not happening for OpenSSH right now. Report to OpenSSH devs and implement
-     *       if fixed
+     * this cleanup function should normally be called by pam_end().
+     * unfortunately this is not happening for OpenSSH under "normal"
+     * circumstances. the reasons is as follows:
+     *
+     * unless UNSUPPORTED_POSIX_THREADS_HACK has been defined during
+     * compilation (which in most cases is not) OpenSSH creates a new
+     * process(!) for pam authentication and account handling. the pam
+     * handle is duplicated into the new process and every information
+     * added through pam modules to the handle is only visible in the
+     * new process. as the process terminates after the account handling
+     * the original pam handle does not know anything about the previously
+     * registered data structure and cleanup function so that it cannot
+     * be taken into account during pam_end().
+     *
+     * not freeing the data structure results in a memory leak.
+     * as the process terminates immediately and all memory is given
+     * back to the operating system no further workarounds have been
+     * setup.
+     *
+     * still an implementation follows for the brave people who enabled
+     * posix threads in OpenSSH and to be prepared for possible changes
+     * in OpenSSH.
      */
+    LOG_MSG("freeing x509_info");
+    free(x509_info->log_facility);
+    free(x509_info->subject);
+    free(x509_info->issuer);
+    free(x509_info->serial);
+    free(x509_info->ssh_key);
+    free(x509_info->ssh_keytype);
+    free(x509_info->authorized_keys_file);
+    free(x509_info->uid);
+    free(x509_info);
+    LOG_SUCCESS("x509_info freed");
 }
 
 static void
@@ -417,7 +447,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         /*
          * check for local account
          *
-         * this is needed because openssh validates local account after running
+         * this is needed because OpenSSH validates local account after running
          * the pam modules so that the whole pam module chain would run all the
          * time an invalid user would try to connect
          */
