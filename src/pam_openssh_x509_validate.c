@@ -58,18 +58,15 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
                         fwrite(x509_info->ssh_key, strlen(x509_info->ssh_key), 1, fd_auth_keys);
                         fwrite("\n", 1, 1, fd_auth_keys);
                         fclose(fd_auth_keys);
-
                     } else {
                         /* unlikely */
                         LOG_FAIL("Cannot open '%s' for writing", x509_info->authorized_keys_file);
                         goto auth_err;
                     }
-
                 } else {
                     LOG_FAIL("Cannot synchronize keys. Either key or keytype not known");
                     goto auth_err;
                 }
-
             } else {
                 LOG_FAIL("Access denied!");
                 LOG_MSG("Truncating authorized_keys file");
@@ -83,15 +80,12 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
                     goto auth_err;
                 }
             }
-
         } else {
             LOG_MSG("LDAP server not accessible. Not changing anything");
         }
-
     } else if (rc == PAM_SYSTEM_ERR) {
         LOG_FAIL("pam_get_data(): pamh == NULL");
         goto auth_err;
-
     } else if (rc == PAM_NO_MODULE_DATA) {
         LOG_FAIL("pam_get_data(): Module data not found or entry is NULL");
         goto auth_err;
@@ -99,8 +93,8 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 
     return PAM_SUCCESS;
 
-    auth_err:
-        return PAM_AUTH_ERR;
+auth_err:
+    return PAM_AUTH_ERR;
 }
 
 PAM_EXTERN int

@@ -220,13 +220,11 @@ query_ldap(cfg_t *cfg)
 
                                             /* free x509 structure */
                                             X509_free(x509);
-
                                         } else {
                                             /* should be impossible */
                                             LOG_FAIL("unhandled (not requested) attribute: '%s'", attr);
                                         }
                                     }
-
                                 } else {
                                     /* unlikely */
                                     LOG_FAIL("ldap_get_values_len()");
@@ -271,40 +269,38 @@ query_ldap(cfg_t *cfg)
                         }
                 }
             }
-
         } else {
             /* ldap_search_ext_s() error */
             LOG_FAIL("ldap_search_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
         }
         /* clear result structure - even if no result has been found (see man page) */
         ldap_msgfree(ldap_result);
-
     } else {
         /* bind not successful */
         x509_info->directory_online = 0;
         LOG_FAIL("ldap_sasl_bind_s(): '%s' (%d)", ldap_err2string(rc), rc);
     }
 
-    unbind_and_free_handle:
-        /*
-         * unbind and free ldap_handle
-         *
-         * it is important to unbind also when the bind has actually failed because
-         * else the ldap_handle structure that has been initialized before would
-         * never be freed leading to a memory leak
-         */
-        if (ldap_handle != NULL) {
-            rc = ldap_unbind_ext_s(ldap_handle, NULL, NULL);
-            if (rc == LDAP_SUCCESS) {
-                LOG_SUCCESS("ldap_unbind_ext_s()");
-            } else {
-                LOG_FAIL("ldap_unbind_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
-            }
+unbind_and_free_handle:
+    /*
+     * unbind and free ldap_handle
+     *
+     * it is important to unbind also when the bind has actually failed because
+     * else the ldap_handle structure that has been initialized before would
+     * never be freed leading to a memory leak
+     */
+    if (ldap_handle != NULL) {
+        rc = ldap_unbind_ext_s(ldap_handle, NULL, NULL);
+        if (rc == LDAP_SUCCESS) {
+            LOG_SUCCESS("ldap_unbind_ext_s()");
+        } else {
+            LOG_FAIL("ldap_unbind_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
         }
+    }
 }
 
 static void
-cfg_error_handler (cfg_t *cfg, const char *fmt, va_list ap)
+cfg_error_handler(cfg_t *cfg, const char *fmt, va_list ap)
 {
     char error_msg[1024];
     vsnprintf(error_msg, sizeof(error_msg), fmt, ap);
@@ -316,7 +312,7 @@ cfg_error_handler (cfg_t *cfg, const char *fmt, va_list ap)
  * during parsing. altering the value later wont incorporate them
  */
 static int
-cfg_str_to_int_parser_libldap (cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
+cfg_str_to_int_parser_libldap(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
     long int result_value = config_lookup(LIBLDAP, value);
     if (result_value == -EINVAL) {
@@ -330,7 +326,7 @@ cfg_str_to_int_parser_libldap (cfg_t *cfg, cfg_opt_t *opt, const char *value, vo
 }
 
 static int
-cfg_validate_log_facility (cfg_t *cfg, cfg_opt_t *opt)
+cfg_validate_log_facility(cfg_t *cfg, cfg_opt_t *opt)
 {
     const char *log_facility = cfg_opt_getnstr(opt, 0);
     if (set_log_facility(log_facility) == -EINVAL) {
@@ -341,7 +337,7 @@ cfg_validate_log_facility (cfg_t *cfg, cfg_opt_t *opt)
 }
 
 static int
-cfg_validate_ldap_uri (cfg_t *cfg, cfg_opt_t *opt)
+cfg_validate_ldap_uri(cfg_t *cfg, cfg_opt_t *opt)
 {
     const char *ldap_uri = cfg_opt_getnstr(opt, 0);
     if (ldap_is_ldap_url(ldap_uri) == 0) {
@@ -352,7 +348,7 @@ cfg_validate_ldap_uri (cfg_t *cfg, cfg_opt_t *opt)
 }
 
 static int
-cfg_validate_ldap_search_timeout (cfg_t *cfg, cfg_opt_t *opt)
+cfg_validate_ldap_search_timeout(cfg_t *cfg, cfg_opt_t *opt)
 {
     long int timeout = cfg_opt_getnint(opt, 0);
     if (timeout <= 0) {
@@ -404,7 +400,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         case CFG_FILE_ERROR:
             cfg_error(cfg, "cfg_parse(): file: '%s', '%s'", argv[0], strerror(errno));
         case CFG_PARSE_ERROR:
-            goto auth_err;
+            goto auth_err_and_free_config;
     }
 
     /* initialize data transfer object */
@@ -413,21 +409,21 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         init_data_transfer_object(x509_info);
     } else {
         LOG_FAIL("init of data transfer object failed");
-        goto auth_err;
+        goto auth_err_and_free_config;
     }
 
     /* make data transfer object available to module stack */
     int rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
     if (rc != PAM_SUCCESS) {
         LOG_FAIL("pam_set_data()");
-        goto auth_err;
+        goto auth_err_and_free_config;
     }
 
     /* make log facility available in data transfer object */
     x509_info->log_facility = strdup(cfg_getstr(cfg, "log_facility"));
     if (x509_info->log_facility == NULL) {
         LOG_FAIL("strdup()");
-        goto auth_err;
+        goto auth_err_and_free_config;
     }
 
     /* retrieve uid and check for local account */
@@ -442,7 +438,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         x509_info->uid = strndup(uid, UID_BUFFER_SIZE);
         if (x509_info->uid == NULL) {
             LOG_FAIL("strndup()");
-            goto auth_err;
+            goto auth_err_and_free_config;
         }
         /*
          * check for local account
@@ -452,19 +448,16 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
          * time an invalid user would try to connect
          */
         struct passwd *pwd = getpwnam(x509_info->uid);
-
         if (pwd == NULL) {
             LOG_FAIL("user '%s' has no local account", x509_info->uid);
-            goto auth_err;
+            goto auth_err_and_free_config;
         }
-
     } else if (rc == PAM_SYSTEM_ERR) {
         LOG_FAIL("pam_get_user(): (%i)", rc);
-        goto auth_err;
-
+        goto auth_err_and_free_config;
     } else if (rc == PAM_CONV_ERR) {
         LOG_FAIL("pam_get_user(): (%i)", rc);
-        goto auth_err;
+        goto auth_err_and_free_config;
     }
 
     /* expand authorized_keys_file option and add to data transfer object */
@@ -474,7 +467,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         x509_info->authorized_keys_file = expanded_path;
     } else {
         LOG_FAIL("malloc() failed");
-        goto auth_err;
+        goto auth_err_and_free_config;
     }
 
     /* make sure file is readable / writable */
@@ -483,7 +476,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         fclose(access_test);
     } else {
         LOG_FAIL("'%s' is not readable / writable", x509_info->authorized_keys_file);
-        goto auth_err;
+        goto auth_err_and_free_config;
     }
 
     /*
@@ -496,10 +489,11 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 
     return PAM_SUCCESS;
 
-    auth_err:
-        /* free config */
-        release_config(cfg);
-        return PAM_AUTH_ERR;
+auth_err_and_free_config:
+    /* free config */
+    release_config(cfg);
+auth_err:
+    return PAM_AUTH_ERR;
 }
 
 PAM_EXTERN int

@@ -198,7 +198,7 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
  *
  */
 void
-percent_expand (char token, char *subst, char *src, char *dst, int dst_length)
+percent_expand(char token, char *subst, char *src, char *dst, int dst_length)
 {
     if (subst != NULL && src != NULL && dst != NULL && dst_length > 0) {
         bool cdt = 0;
@@ -229,7 +229,7 @@ percent_expand (char token, char *subst, char *src, char *dst, int dst_length)
 }
 
 void
-release_config (cfg_t *cfg)
+release_config(cfg_t *cfg)
 {
     if (cfg == NULL) {
         return;

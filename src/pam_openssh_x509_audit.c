@@ -31,7 +31,6 @@ log_string(char *attr, char *value)
     if (attr == NULL) {
         return;
     }
-
     if (value == NULL) {
         value = unset;
     }
@@ -44,14 +43,11 @@ log_char(char *attr, char value)
     if (attr == NULL) {
         return;
     }
-
     char *value_string = NULL;
     if (value == 0x86) {
         value_string = unset;
-
     } else if (value == 1) {
         value_string = "true";
-
     } else {
         value_string = "false";
     }
@@ -69,7 +65,6 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         if (rc == -EINVAL) {
             LOG_FAIL("set_log_facility(%s)", x509_info->log_facility);
         }
-
         LOG_MSG("===================================================");
         log_string("uid", x509_info->uid);
         log_string("auth_keys_file", x509_info->authorized_keys_file);
@@ -87,11 +82,9 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         log_char("is_directory_online", x509_info->directory_online);
         log_char("has_access", x509_info->has_access);
         LOG_MSG("===================================================");
-        
     } else if (rc == PAM_SYSTEM_ERR) {
         LOG_FAIL("pam_get_data(): pamh == NULL");
         goto auth_err;
-
     } else if (rc == PAM_NO_MODULE_DATA) {
         LOG_FAIL("pam_get_data(): Module data not found or entry is NULL");
         goto auth_err;
@@ -99,8 +92,8 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 
     return PAM_SUCCESS;
 
-    auth_err:
-        return PAM_AUTH_ERR;
+auth_err:
+    return PAM_AUTH_ERR;
 }
 
 PAM_EXTERN int
