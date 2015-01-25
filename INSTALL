@@ -9,6 +9,7 @@ Contents of this file
  * OpenLDAP
  * pam_openssh_x509
  * PuTTY-CAC 0.62
+ * Trusted CA's store
  * Overview
 
 
@@ -82,10 +83,9 @@ the authorized_keys file will be stored there
 5) Create keystore for 'sebastian'
 $ mkdir /usr/local/etc/ssh/keystore/sebastian
 
-6) As the authorized_keys file will be managed by pam_openssh_x509 we have
-to make sure that noone expect root can change the authorized_keys file
-
-TODO
+/!\ As the authorized_keys file will be managed by pam_openssh_x509 we have
+to make sure that noone expect root can change the authorized_keys file.
+Standard permissions (755) with ownership root:root should be fine.
 
 7) Run OpenSSH
 $ /usr/bin/sshd -f /usr/local/etc/ssh/sshd_config
@@ -208,6 +208,20 @@ PuTTY-CAC
 
 Connect to OpenSSH server using the private key in 10-ee_user_1_key.pem
 (In production use the private key inside the Smartcard for signing)
+
+
+Trusted CA's store
+------------------
+
+1) Create directory where trusted CA's shall be kept
+$ mkdir /usr/local/etc/ssh/cacerts
+
+2) Copy whole CA trust chain
+$ cp samples/00-ca_root_cert.pem /usr/local/etc/ssh/cacerts
+$ cp samples/01-ca_int_user_cert.pem /usr/local/etc/ssh/cacerts 
+
+3) Create symlink hashes
+$ c_rehash /usr/local/etc/ssh/cacerts
 
 
 Overview
