@@ -78,7 +78,7 @@ cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
     free(x509_info->authorized_keys_file);
     free(x509_info->uid);
     free(x509_info);
-    LOG_SUCCESS("x509_info freed");
+    LOG_MSG("x509_info freed");
 }
 
 static void
@@ -452,10 +452,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
             LOG_FATAL("user '%s' has no local account", x509_info->uid);
             goto auth_err_and_free_config;
         }
-    } else if (rc == PAM_SYSTEM_ERR) {
-        LOG_FATAL("pam_get_user(): (%i)", rc);
-        goto auth_err_and_free_config;
-    } else if (rc == PAM_CONV_ERR) {
+    } else {
         LOG_FATAL("pam_get_user(): (%i)", rc);
         goto auth_err_and_free_config;
     }
