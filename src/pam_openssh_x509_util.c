@@ -113,11 +113,29 @@ LOG_SUCCESS(const char *fmt, ...)
 }
 
 void
-LOG_FAIL(const char *fmt, ...)
+LOG_FATAL(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    __LOG("[!]", fmt, ap);
+    va_end(ap);
+}
+
+void
+LOG_CRITICAL(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
     __LOG("[-]", fmt, ap);
+    va_end(ap);
+}
+
+void
+LOG_FAIL(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    __LOG("[~]", fmt, ap);
     va_end(ap);
 }
 

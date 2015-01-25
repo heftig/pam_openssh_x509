@@ -109,14 +109,14 @@ query_ldap(cfg_t *cfg)
     if (rc == LDAP_SUCCESS) {
         LOG_SUCCESS("ldap_initialize()");
     } else {
-        LOG_FAIL("ldap_initialize(): '%s' (%d)", ldap_err2string(rc), rc);
+        LOG_CRITICAL("ldap_initialize(): '%s' (%d)", ldap_err2string(rc), rc);
         goto unbind_and_free_handle;
     }
 
     /* set version */
     rc = ldap_set_option(ldap_handle, LDAP_OPT_PROTOCOL_VERSION, &ldap_version);
     if (rc != LDAP_OPT_SUCCESS) {
-        LOG_FAIL("ldap_set_option(): key: LDAP_OPT_PROTOCOL_VERSION, value: %i", ldap_version);
+        LOG_CRITICAL("ldap_set_option(): key: LDAP_OPT_PROTOCOL_VERSION, value: %i", ldap_version);
         goto unbind_and_free_handle;
     }
 
@@ -151,7 +151,7 @@ query_ldap(cfg_t *cfg)
                                  * cannot access ldap_handle->ld_errno as structure
                                  * is opaque...
                                  */
-                                LOG_FAIL("ldap_get_dn(): '%s'", "user_dn == NULL");
+                                LOG_CRITICAL("ldap_get_dn(): '%s'", "user_dn == NULL");
                             } else {
                                 LOG_MSG("user_dn: %s", user_dn);
                             }
@@ -196,7 +196,7 @@ query_ldap(cfg_t *cfg)
                                             /* decode certificate */
                                             X509 *x509 = d2i_X509(NULL, (const unsigned char **) &value, len);
                                             if (x509 == NULL) {
-                                                LOG_FAIL("d2i_X509(): cannot decode certificate");
+                                                LOG_CRITICAL("d2i_X509(): cannot decode certificate");
                                                 /* try next certificate if existing */
                                                 continue;
                                             }
@@ -209,7 +209,7 @@ query_ldap(cfg_t *cfg)
                                                 extract_ssh_key(pkey, x509_info);
                                                 EVP_PKEY_free(pkey);
                                             } else {
-                                                LOG_FAIL("X509_get_pubkey(): unable to load public key");
+                                                LOG_CRITICAL("X509_get_pubkey(): unable to load public key");
                                             }
                                             check_signature(NULL, &(x509_info->has_valid_signature));
                                             check_expiration(NULL, &(x509_info->is_expired));
@@ -221,13 +221,13 @@ query_ldap(cfg_t *cfg)
                                             /* free x509 structure */
                                             X509_free(x509);
                                         } else {
-                                            /* should be impossible */
+                                            /* unlikely */
                                             LOG_FAIL("unhandled (not requested) attribute: '%s'", attr);
                                         }
                                     }
                                 } else {
                                     /* unlikely */
-                                    LOG_FAIL("ldap_get_values_len()");
+                                    LOG_CRITICAL("ldap_get_values_len()");
                                 }
                                 /* free values structure after each iteration */
                                 ldap_value_free_len(bvals);
@@ -252,10 +252,10 @@ query_ldap(cfg_t *cfg)
                             rc = ldap_parse_result(ldap_handle, ldap_result, &error_code, NULL, &error_msg, NULL, NULL, 0);
                             if (rc == LDAP_SUCCESS) {
                                 if (error_code != LDAP_SUCCESS) {
-                                    LOG_FAIL("ldap_parse_result(): '%s' (%i)", ldap_err2string(error_code), error_code);
+                                    LOG_CRITICAL("ldap_parse_result(): '%s' (%i)", ldap_err2string(error_code), error_code);
                                 }
                                 if (error_msg != NULL) {
-                                    LOG_FAIL("ldap_parse_result(): '%s'", error_msg);
+                                    LOG_CRITICAL("ldap_parse_result(): '%s'", error_msg);
                                     ldap_memfree(error_msg);
                                 }
                             }
@@ -304,7 +304,7 @@ cfg_error_handler(cfg_t *cfg, const char *fmt, va_list ap)
 {
     char error_msg[1024];
     vsnprintf(error_msg, sizeof(error_msg), fmt, ap);
-    LOG_FAIL("%s", error_msg);
+    LOG_FATAL("%s", error_msg);
 }
 
 /*
@@ -363,7 +363,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
     /* first argument must be path to config file */
     if (argc != 1) {
-        LOG_FAIL("arg count != 1");
+        LOG_FATAL("arg count != 1");
         goto auth_err;
     }
 
@@ -408,21 +408,21 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     if (x509_info != NULL) {
         init_data_transfer_object(x509_info);
     } else {
-        LOG_FAIL("init of data transfer object failed");
+        LOG_FATAL("init of data transfer object failed");
         goto auth_err_and_free_config;
     }
 
     /* make data transfer object available to module stack */
     int rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
     if (rc != PAM_SUCCESS) {
-        LOG_FAIL("pam_set_data()");
+        LOG_FATAL("pam_set_data()");
         goto auth_err_and_free_config;
     }
 
     /* make log facility available in data transfer object */
     x509_info->log_facility = strdup(cfg_getstr(cfg, "log_facility"));
     if (x509_info->log_facility == NULL) {
-        LOG_FAIL("strdup()");
+        LOG_FATAL("strdup()");
         goto auth_err_and_free_config;
     }
 
@@ -437,7 +437,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
          */
         x509_info->uid = strndup(uid, UID_BUFFER_SIZE);
         if (x509_info->uid == NULL) {
-            LOG_FAIL("strndup()");
+            LOG_FATAL("strndup()");
             goto auth_err_and_free_config;
         }
         /*
@@ -449,14 +449,14 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
          */
         struct passwd *pwd = getpwnam(x509_info->uid);
         if (pwd == NULL) {
-            LOG_FAIL("user '%s' has no local account", x509_info->uid);
+            LOG_FATAL("user '%s' has no local account", x509_info->uid);
             goto auth_err_and_free_config;
         }
     } else if (rc == PAM_SYSTEM_ERR) {
-        LOG_FAIL("pam_get_user(): (%i)", rc);
+        LOG_FATAL("pam_get_user(): (%i)", rc);
         goto auth_err_and_free_config;
     } else if (rc == PAM_CONV_ERR) {
-        LOG_FAIL("pam_get_user(): (%i)", rc);
+        LOG_FATAL("pam_get_user(): (%i)", rc);
         goto auth_err_and_free_config;
     }
 
@@ -466,7 +466,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         percent_expand('u', x509_info->uid, cfg_getstr(cfg, "authorized_keys_file"), expanded_path, AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
         x509_info->authorized_keys_file = expanded_path;
     } else {
-        LOG_FAIL("malloc() failed");
+        LOG_FATAL("malloc() failed");
         goto auth_err_and_free_config;
     }
 
@@ -475,7 +475,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     if (access_test != NULL) {
         fclose(access_test);
     } else {
-        LOG_FAIL("'%s' is not readable / writable", x509_info->authorized_keys_file);
+        LOG_FATAL("'%s' is not readable / writable", x509_info->authorized_keys_file);
         goto auth_err_and_free_config;
     }
 

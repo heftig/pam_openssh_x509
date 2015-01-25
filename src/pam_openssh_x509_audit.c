@@ -82,11 +82,8 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         log_char("is_directory_online", x509_info->directory_online);
         log_char("has_access", x509_info->has_access);
         LOG_MSG("===================================================");
-    } else if (rc == PAM_SYSTEM_ERR) {
-        LOG_FAIL("pam_get_data(): pamh == NULL");
-        goto auth_err;
-    } else if (rc == PAM_NO_MODULE_DATA) {
-        LOG_FAIL("pam_get_data(): Module data not found or entry is NULL");
+    } else {
+        LOG_FATAL("pam_get_data()");
         goto auth_err;
     }
 

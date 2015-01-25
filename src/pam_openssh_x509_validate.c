@@ -47,7 +47,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         /* only modify authorized_keys file if LDAP server could be queried */
         if (x509_info->directory_online == 1) {
             if (authorized(x509_info)) {
-                LOG_SUCCESS("Access granted!");
+                LOG_MSG("Access granted!");
                 LOG_MSG("Synchronizing keys");
                 if (x509_info->ssh_keytype != NULL && x509_info->ssh_key != NULL) {
                     /* write key to authorized_keys file */
@@ -60,15 +60,15 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
                         fclose(fd_auth_keys);
                     } else {
                         /* unlikely */
-                        LOG_FAIL("Cannot open '%s' for writing", x509_info->authorized_keys_file);
+                        LOG_FATAL("Cannot open '%s' for writing", x509_info->authorized_keys_file);
                         goto auth_err;
                     }
                 } else {
-                    LOG_FAIL("Cannot synchronize keys. Either key or keytype not known");
+                    LOG_FATAL("Cannot synchronize keys. Either key or keytype not known");
                     goto auth_err;
                 }
             } else {
-                LOG_FAIL("Access denied!");
+                LOG_MSG("Access denied!");
                 LOG_MSG("Truncating authorized_keys file");
                 FILE *fd_auth_keys = fopen(x509_info->authorized_keys_file, "w");
                 if (fd_auth_keys != NULL) {
@@ -76,18 +76,15 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
                     fclose(fd_auth_keys);
                 } else {
                     /* unlikely */
-                    LOG_FAIL("Truncation of '%s' failed", x509_info->authorized_keys_file);
+                    LOG_FATAL("Truncation of '%s' failed", x509_info->authorized_keys_file);
                     goto auth_err;
                 }
             }
         } else {
             LOG_MSG("LDAP server not accessible. Not changing anything");
         }
-    } else if (rc == PAM_SYSTEM_ERR) {
-        LOG_FAIL("pam_get_data(): pamh == NULL");
-        goto auth_err;
-    } else if (rc == PAM_NO_MODULE_DATA) {
-        LOG_FAIL("pam_get_data(): Module data not found or entry is NULL");
+    } else {
+        LOG_FATAL("pam_get_data()");
         goto auth_err;
     }
 
