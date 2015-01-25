@@ -46,12 +46,10 @@ struct pam_openssh_x509_info {
     char *ssh_key;
 
     char has_cert;
+    char has_valid_cert;
     char *serial;
     char *issuer;
     char *subject;
-    char has_valid_signature;
-    char is_expired;
-    char is_revoked;
 
     char directory_online;
     char has_access;
@@ -70,9 +68,7 @@ long int config_lookup(const enum __sections sec, const char *key);
 void release_config(cfg_t *cfg);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
 void percent_expand(char token, char *subst, char *src, char *dst, int dst_length);
-void check_access(char *group_dn, char *identifier, char *has_access);
-void check_signature(char *exchange_with_cert, char *has_valid_signature);
-void check_expiration(char *exchange_with_cert, char *is_expired);
-void check_revocation(char *exchange_with_cert, char *is_revoked);
+void check_access(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info);
+void validate_x509(X509 *x509, char *cacerts_dir, struct pam_openssh_x509_info *x509_info);
 void extract_ssh_key(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info);
 #endif

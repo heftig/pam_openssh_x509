@@ -72,12 +72,10 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         log_string("ssh_key", x509_info->ssh_key);
         LOG_MSG("");
         log_char("has_cert", x509_info->has_cert);
+        log_char("has_valid_cert", x509_info->has_valid_cert);
         log_string("serial", x509_info->serial);
         log_string("issuer", x509_info->issuer);
         log_string("subject", x509_info->subject);
-        log_char("has_valid_sig", x509_info->has_valid_signature);
-        log_char("is_expired", x509_info->is_expired);
-        log_char("is_revoked", x509_info->is_revoked);
         LOG_MSG("");
         log_char("is_directory_online", x509_info->directory_online);
         log_char("has_access", x509_info->has_access);

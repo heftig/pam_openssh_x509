@@ -208,9 +208,10 @@ START_TEST
     char *identifier = _test_check_access_lt[_i].identifier;
     char exp_result = _test_check_access_lt[_i].exp_result;
 
-    char has_access = -1;
-    check_access(group_dn, identifier, &has_access);
-    ck_assert_int_eq(has_access, exp_result);
+    struct pam_openssh_x509_info x509_info;
+    x509_info.has_access = -1;
+    check_access(group_dn, identifier, &x509_info);
+    ck_assert_int_eq(x509_info.has_access, exp_result);
 }
 END_TEST
 

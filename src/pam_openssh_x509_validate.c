@@ -27,9 +27,7 @@ static int
 authorized(struct pam_openssh_x509_info *x509_info)
 {
     return (x509_info->has_access == 1 &&
-            x509_info->has_valid_signature == 1 &&
-            x509_info->is_expired == 0 &&
-            x509_info->is_revoked == 0);
+            x509_info->has_valid_cert == 1);
 }
 
 PAM_EXTERN int
@@ -69,10 +67,9 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
                 }
             } else {
                 LOG_MSG("Access denied!");
-                LOG_MSG("Truncating authorized_keys file");
+                LOG_MSG("Truncating authorized_keys file (%s)", x509_info->authorized_keys_file);
                 FILE *fd_auth_keys = fopen(x509_info->authorized_keys_file, "w");
                 if (fd_auth_keys != NULL) {
-                    LOG_SUCCESS("'%s' truncated", x509_info->authorized_keys_file);
                     fclose(fd_auth_keys);
                 } else {
                     /* unlikely */

@@ -181,12 +181,10 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
         x509_info->ssh_key = NULL;
 
         x509_info->has_cert = 0x86;
+        x509_info->has_valid_cert = 0x86;
         x509_info->serial = NULL;
         x509_info->issuer = NULL;
         x509_info->subject = NULL;
-        x509_info->has_valid_signature = 0x86;
-        x509_info->is_expired = 0x86;
-        x509_info->is_revoked = 0x86;
 
         x509_info->directory_online = 0x86;
         x509_info->has_access = 0x86;
@@ -287,13 +285,13 @@ get_fqdn(char *buffer, int buffer_length)
 */
 
 void
-check_access(char *group_dn, char *identifier, char *has_access)
+check_access(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info)
 {
     /*
      * copy group_dn to char array in order to make sure that
      * string is mutable as strtok will try to change it
      */
-    if (group_dn != NULL && identifier != NULL && has_access != NULL) {
+    if (group_dn != NULL && identifier != NULL && x509_info != NULL) {
         char group_dn_mutable[GROUP_DN_BUFFER_SIZE];
         strncpy(group_dn_mutable, group_dn, GROUP_DN_BUFFER_SIZE);
 
@@ -303,34 +301,61 @@ check_access(char *group_dn, char *identifier, char *has_access)
             if (token != NULL) {
                 /* token now contains rdn value of group only */
                 if (strcmp(token, identifier) == 0) {
-                    *has_access = 1;
+                    x509_info->has_access = 1;
                     return;
                 }
             }
         }
     }
-    *has_access = 0;
+    x509_info->has_access = 0;
 }
 
 void
-check_signature(char *exchange_with_cert, char *has_valid_signature)
+validate_x509(X509 *x509, char *cacerts_dir, struct pam_openssh_x509_info *x509_info)
 {
-    /* TODO: implement check of signature here */
-    *has_valid_signature = 1;
-}
+    /* create a new x509 store with ca certificates */
+    X509_STORE *store = X509_STORE_new();
+    if (store == NULL) {
+        LOG_CRITICAL("X509_STORE_new()");
+        return;
+    }
+    X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
+    if (lookup != NULL) {
+        int rc = X509_LOOKUP_add_dir(lookup, cacerts_dir, X509_FILETYPE_PEM);
+        if (rc == 0) {
+            LOG_CRITICAL("X509_LOOKUP_add_dir");
+            goto free_x509_store;
+        }
+    } else {
+        LOG_CRITICAL("X509_STORE_add_lookup");
+        goto free_x509_store;
+    }
 
-void
-check_expiration(char *exchange_with_cert, char *is_expired)
-{
-    /* TODO: implement check for expiration here */
-    *is_expired = 0;
-}
+    /* validate the user certificate against the x509 store */
+    X509_STORE_CTX *ctx = X509_STORE_CTX_new();
+    if (ctx == NULL) {
+        LOG_CRITICAL("X509_STORE_CTX_new()");
+        goto free_x509_store;
+    }
+    int rc = X509_STORE_CTX_init(ctx, store, x509, NULL);
+    if (rc == 0) {
+        LOG_CRITICAL("X509_STORE_CTX_init()");
+        goto free_x509_store_ctx;
+    }
+    rc = X509_verify_cert(ctx);
+    if (rc != 1) {
+        x509_info->has_valid_cert = 0;
+        int cert_error = X509_STORE_CTX_get_error(ctx);
+        const char *cert_error_string = X509_verify_cert_error_string(cert_error);
+        LOG_FAIL("X509_verify_cert(): %d (%s)", cert_error, cert_error_string);
+    } else {
+        x509_info->has_valid_cert = 1;
+    }
 
-void
-check_revocation(char *exchange_with_cert, char *is_revoked)
-{
-    /* TODO: implement check for revocation here */
-    *is_revoked = 0;
+free_x509_store_ctx:
+    X509_STORE_CTX_free(ctx);
+free_x509_store:
+    X509_STORE_free(store);
 }
 
 void

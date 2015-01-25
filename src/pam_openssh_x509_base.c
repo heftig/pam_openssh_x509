@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include <syslog.h>
 #include <sys/types.h>
+#include <dirent.h>
 #include <pwd.h>
 #include <errno.h>
 
@@ -130,7 +131,7 @@ query_ldap(cfg_t *cfg)
         x509_info->directory_online = 1;
 
         /*
-         * search people tree for given uid and retrieve group memberships / x.509 certificates
+         * search people tree for given uid and retrieve group memberships / x509 certificates
          */
         rc = ldap_search_ext_s(ldap_handle, cfg_getstr(cfg, "ldap_base"), cfg_getint(cfg, "ldap_scope"), filter, attrs, 0, NULL, NULL, &search_timeout, sizelimit, &ldap_result);
         if (rc == LDAP_SUCCESS) {
@@ -183,13 +184,13 @@ query_ldap(cfg_t *cfg)
                                             }
                                             /* check access permission based on group membership and store result */
                                             LOG_MSG("group_dn: %s", value);
-                                            check_access(value, cfg_getstr(cfg, "ldap_group_identifier"), &(x509_info->has_access));
+                                            check_access(value, cfg_getstr(cfg, "ldap_group_identifier"), x509_info);
 
                                         /*
-                                         * process x.509 certificates
+                                         * process x509 certificates
                                          */ 
                                         } else if (is_attr_cert) {
-                                            /* stop looping over x.509 certificates when a valid one has already been found */
+                                            /* stop looping over x509 certificates when a valid one has already been found */
                                             if (x509_info->has_cert == 1) {
                                                 break;
                                             }
@@ -202,22 +203,20 @@ query_ldap(cfg_t *cfg)
                                             }
                                             x509_info->has_cert = 1;
 
-                                            /* extract public key */
+                                            /* validate certificate */
+                                            validate_x509(x509, cfg_getstr(cfg, "cacerts_dir"), x509_info);
+                                            x509_info->subject = X509_NAME_oneline(X509_get_subject_name(x509), NULL, 0);
+                                            x509_info->serial = BN_bn2hex(ASN1_INTEGER_to_BN(X509_get_serialNumber(x509), 0));
+                                            x509_info->issuer = X509_NAME_oneline(X509_get_issuer_name(x509), NULL, 0);
+
+                                            /* convert public key to OpenSSH format */
                                             EVP_PKEY *pkey = X509_get_pubkey(x509);
                                             if (pkey != NULL) {
-                                                /* convert public key to ssh format */
                                                 extract_ssh_key(pkey, x509_info);
                                                 EVP_PKEY_free(pkey);
                                             } else {
                                                 LOG_CRITICAL("X509_get_pubkey(): unable to load public key");
                                             }
-                                            check_signature(NULL, &(x509_info->has_valid_signature));
-                                            check_expiration(NULL, &(x509_info->is_expired));
-                                            check_revocation(NULL, &(x509_info->is_revoked));
-                                            x509_info->subject = X509_NAME_oneline(X509_get_subject_name(x509), NULL, 0);
-                                            x509_info->serial = BN_bn2hex(ASN1_INTEGER_to_BN(X509_get_serialNumber(x509), 0));
-                                            x509_info->issuer = X509_NAME_oneline(X509_get_issuer_name(x509), NULL, 0);
-
                                             /* free x509 structure */
                                             X509_free(x509);
                                         } else {
@@ -352,7 +351,25 @@ cfg_validate_ldap_search_timeout(cfg_t *cfg, cfg_opt_t *opt)
 {
     long int timeout = cfg_opt_getnint(opt, 0);
     if (timeout <= 0) {
-        cfg_error(cfg, "cfg_validate_ldap_search_timeout():  '%s', value: '%li' (value must be > 0)", cfg_opt_name(opt), timeout);
+        cfg_error(cfg, "cfg_validate_ldap_search_timeout(): option: '%s', value: '%li' (value must be > 0)", cfg_opt_name(opt), timeout);
+        return -1;
+    }
+    return 0;
+}
+
+static int
+cfg_validate_cacerts_dir(cfg_t *cfg, cfg_opt_t *opt)
+{
+    const char *cacerts_dir = cfg_opt_getnstr(opt, 0);
+    /* check if directory exists */
+    DIR *cacerts_dir_stream = opendir(cacerts_dir);
+    if (cacerts_dir_stream != NULL) {
+        int rc = closedir(cacerts_dir_stream);
+        if (rc != 0) {
+            LOG_FAIL("closedir(): '%s'", strerror(errno));
+        }
+    } else {
+        cfg_error(cfg, "cfg_validate_cacerts_dir(): option: '%s', value: '%s' (%s)", cfg_opt_name(opt), cacerts_dir, strerror(errno));
         return -1;
     }
     return 0;
@@ -382,6 +399,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
         CFG_STR("ldap_group_identifier", "pam_openssh_x509_test", CFGF_NONE),
         CFG_STR("authorized_keys_file", "/usr/local/etc/ssh/keystore/%u/authorized_keys", CFGF_NONE),
+        CFG_STR("cacerts_dir", "/usr/local/etc/ssh/cacerts", CFGF_NONE),
         CFG_END()
     }; 
 
@@ -392,6 +410,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     cfg_set_validate_func(cfg, "log_facility", &cfg_validate_log_facility);
     cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
     cfg_set_validate_func(cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
+    cfg_set_validate_func(cfg, "cacerts_dir", &cfg_validate_cacerts_dir);
 
     /* parse config */
     switch (cfg_parse(cfg, argv[0])) {
