@@ -15,7 +15,7 @@ Introduction
 ------------
 
 pam_openssh_x509 is a collection of PAM modules that paired with a PKI provides
-a fully automatized solution for the management of OpenSSH keys.
+a fully automated solution for the management of OpenSSH keys.
 
 pam_openssh_x509 enables you to...
 
@@ -72,6 +72,7 @@ The LDAP server
 
  * stores all x509 certificates
  * maintains a list of all OpenSSH servers
+ * holds access permissions for the OpenSSH servers
 
 The Smartcard is used for
 
@@ -89,7 +90,7 @@ the user object in the LDAP server. Every OpenSSH server will be represented as
 a group in a distinct tree in the LDAP server. Access permission to an OpenSSH
 server is then granted through a group membership. pam_openssh_x509 makes sure
 that the public key of the x509 certificate is synchronized to the server after
-access permissions and the certificate have been checked.
+access permissions have been checked and the certificate has been validated.
 
 
 Module stack
@@ -120,9 +121,9 @@ made accessible for downstream modules. The audit module is a passive component
 that only logs the content of the data transfer object. The actual modification
 of the authorized_keys file will be performed by the validation module that can
 be different for various environments. For example in a testing environment you
-wouldnt mind if the users certificate is expired or revoked whereas you would
-in production. The validation module is the only module that has to be adjusted
-to individual needs.
+wouldnt mind if the users certificate is not valid anymore whereas you would in
+production. The validation module is the only module that has to be adjusted to
+individual needs.
 
 
 Installation
