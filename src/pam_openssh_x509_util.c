@@ -320,14 +320,13 @@ validate_x509(X509 *x509, char *cacerts_dir, struct pam_openssh_x509_info *x509_
         return;
     }
     X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
-    if (lookup != NULL) {
-        int rc = X509_LOOKUP_add_dir(lookup, cacerts_dir, X509_FILETYPE_PEM);
-        if (rc == 0) {
-            LOG_CRITICAL("X509_LOOKUP_add_dir");
-            goto free_x509_store;
-        }
-    } else {
-        LOG_CRITICAL("X509_STORE_add_lookup");
+    if (lookup == NULL) {
+        LOG_CRITICAL("X509_STORE_add_lookup()");
+        goto free_x509_store;
+    }
+    int rc = X509_LOOKUP_add_dir(lookup, cacerts_dir, X509_FILETYPE_PEM);
+    if (rc == 0) {
+        LOG_CRITICAL("X509_LOOKUP_add_dir()");
         goto free_x509_store;
     }
 
@@ -337,7 +336,7 @@ validate_x509(X509 *x509, char *cacerts_dir, struct pam_openssh_x509_info *x509_
         LOG_CRITICAL("X509_STORE_CTX_new()");
         goto free_x509_store;
     }
-    int rc = X509_STORE_CTX_init(ctx, store, x509, NULL);
+    rc = X509_STORE_CTX_init(ctx, store, x509, NULL);
     if (rc == 0) {
         LOG_CRITICAL("X509_STORE_CTX_init()");
         goto free_x509_store_ctx;
