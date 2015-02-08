@@ -67,6 +67,13 @@ static struct test_check_access _test_check_access_lt[] =
         { "cn=blub,dc=abc", NULL, 0 },
     };
 
+static struct test_validate_x509 _test_validate_x509[] =
+    {
+        { "not_trusted_ca.pem", 0 },
+        { "trusted_ca_but_expired.pem", 0 },
+        { "trusted_and_not_expired.pem", 1 },
+    };
+
 START_TEST
 (test_percent_expand)
 {
@@ -215,6 +222,43 @@ START_TEST
 }
 END_TEST
 
+START_TEST
+(test_validate_x509)
+{
+    char *x509_filename = _test_validate_x509[_i].filename;
+    char exp_result = _test_validate_x509[_i].exp_result;
+
+    struct pam_openssh_x509_info x509_info;
+    x509_info.has_valid_cert = -1;
+
+    char *x509_certs_dir = X509CERTSDIR;
+
+    int rc = chdir(x509_certs_dir);
+    if (rc == 0) {
+        FILE *x509_file = fopen(x509_filename, "r");
+        if (x509_file != NULL) {
+            X509* x509 = PEM_read_X509(x509_file, NULL, NULL, NULL);
+            if (x509 != NULL) {
+                /* ca_certs_dir relative to x509_certs_dir */
+                char *ca_certs_dir = "../" CACERTSDIR;
+                validate_x509(x509, ca_certs_dir, &x509_info);
+                ck_assert_int_eq(x509_info.has_valid_cert, exp_result);
+            } else {
+                printf("PEM_read_X509() failed\n");
+            }
+            rc = fclose(x509_file);
+            if (rc != 0) {
+                printf("fclose() failed ('%s')\n", strerror(errno));
+            }
+        } else {
+            printf("fopen() failed ('%s')\n", x509_filename);
+        }
+    } else {
+        printf("chdir() failed ('%s')\n", strerror(errno));
+    }
+}
+END_TEST
+
 Suite *
 make_util_suite(void)
 {
@@ -231,8 +275,6 @@ make_util_suite(void)
     /* helper test cases */
     int length_pe_lt = sizeof(_test_percent_expand_lt) / sizeof(struct test_percent_expand);
     tcase_add_loop_test(tc_helper, test_percent_expand, 0, length_pe_lt);
-    tcase_add_test(tc_helper, test_extract_ssh_key);
-    tcase_add_test(tc_helper, test_extract_ssh_key_params);
     tcase_add_test(tc_helper, test_config_lookup);
     tcase_add_test(tc_helper, test_set_log_facility);
     tcase_add_test(tc_helper, test_release_config);
@@ -240,8 +282,12 @@ make_util_suite(void)
     tcase_add_loop_test(tc_helper, test_check_access, 0, length_ca_lt);
 
     /* ssh test cases */
+    tcase_add_test(tc_ssh, test_extract_ssh_key);
+    tcase_add_test(tc_ssh, test_extract_ssh_key_params);
 
     /* x509 test cases */
+    int length_validate_x509 = sizeof(_test_validate_x509) / sizeof(struct test_validate_x509);
+    tcase_add_loop_test(tc_x509, test_validate_x509, 0, length_validate_x509);
 
     return s;
 }

@@ -5,5 +5,5 @@ pam_openssh_x509_check_SOURCES = pam_openssh_x509_check_main.c \
                                  pam_openssh_x509_check.h \
                                  ../src/pam_openssh_x509_util.c
 pam_openssh_x509_check_LDADD = ${LDADD_CHECK}
-pam_openssh_x509_check_CPPFLAGS = -DKEYSDIR="\"${srcdir}/openssh_keys\""
+pam_openssh_x509_check_CPPFLAGS = -DKEYSDIR="\"${srcdir}/openssh_keys\"" -DX509CERTSDIR="\"${srcdir}/x509_certificates\"" -DCACERTSDIR="\"${srcdir}/ca_certificates\""
 

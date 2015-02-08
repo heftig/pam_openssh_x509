@@ -287,11 +287,11 @@ get_fqdn(char *buffer, int buffer_length)
 void
 check_access(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info)
 {
-    /*
-     * copy group_dn to char array in order to make sure that
-     * string is mutable as strtok will try to change it
-     */
     if (group_dn != NULL && identifier != NULL && x509_info != NULL) {
+        /*
+         * copy group_dn to char array in order to make sure that
+         * string is mutable as strtok will try to change it
+         */
         char group_dn_mutable[GROUP_DN_BUFFER_SIZE];
         strncpy(group_dn_mutable, group_dn, GROUP_DN_BUFFER_SIZE);
 
@@ -313,11 +313,14 @@ check_access(char *group_dn, char *identifier, struct pam_openssh_x509_info *x50
 void
 validate_x509(X509 *x509, char *cacerts_dir, struct pam_openssh_x509_info *x509_info)
 {
+    /* add algorithms */
+    OpenSSL_add_all_algorithms();
+
     /* create a new x509 store with ca certificates */
     X509_STORE *store = X509_STORE_new();
     if (store == NULL) {
         LOG_CRITICAL("X509_STORE_new()");
-        return;
+        goto free_algorithms;
     }
     X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
     if (lookup == NULL) {
@@ -355,6 +358,8 @@ free_x509_store_ctx:
     X509_STORE_CTX_free(ctx);
 free_x509_store:
     X509_STORE_free(store);
+free_algorithms:
+    EVP_cleanup();
 }
 
 void

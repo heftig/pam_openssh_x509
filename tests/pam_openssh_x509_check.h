@@ -33,6 +33,11 @@ struct test_check_access {
     char exp_result;
 };
 
+struct test_validate_x509 {
+    char *filename;
+    char exp_result;
+};
+
 /* function declarations */
 Suite *make_util_suite(void);
 #endif
