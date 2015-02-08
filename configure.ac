@@ -17,13 +17,14 @@ PKG_CHECK_MODULES([libcheck], [check >= 0.9.14], [], [AC_MSG_ERROR([cannot find 
 PKG_CHECK_MODULES([libconfuse], [libconfuse >= 2.7], [], [AC_MSG_ERROR([cannot find libconfuse (>= 2.7)])])
 PKG_CHECK_MODULES([libcrypto], [libcrypto >= 1.0.1j], [], [AC_MSG_ERROR([cannot find libcrypto (>= 1.0.1j)])])
 AC_CHECK_LIB([ldap], [ldap_sasl_bind_s], [], [AC_MSG_ERROR([cannot find libldap])])
+AC_CHECK_LIB([lber], [ber_free], [], [AC_MSG_ERROR([cannot find liblber])])
 AC_CHECK_LIB([pam], [pam_start], [], [AC_MSG_ERROR([cannot find libpam])])
 AC_SUBST([LIBS], [ ])
 
-AC_SUBST([LIBADD_BASE], ["-lpam ${libconfuse_LIBS} -lldap ${libcrypto_LIBS}"])
+AC_SUBST([LIBADD_BASE], ["-lpam ${libconfuse_LIBS} -lldap -llber ${libcrypto_LIBS}"])
 AC_SUBST([LIBADD_AUDIT], ["-lpam ${libconfuse_LIBS} ${libcrypto_LIBS}"])
 AC_SUBST([LIBADD_VALIDATE], ["-lpam ${libconfuse_LIBS} ${libcrypto_LIBS}"])
-AC_SUBST([LDADD_CHECK], ["${libcheck_LIBS} ${libconfuse_LIBS} ${libcrypto_LIBS}"])
+AC_SUBST([LDADD_CHECK], ["-lpam ${libcheck_LIBS} ${libconfuse_LIBS} -lldap -llber ${libcrypto_LIBS}"])
 
 # Checks for header files.
 

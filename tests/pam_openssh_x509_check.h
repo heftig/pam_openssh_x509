@@ -34,10 +34,16 @@ struct test_check_access {
 };
 
 struct test_validate_x509 {
-    char *filename;
+    char *file;
+    char exp_result;
+};
+
+struct test_init_and_parse_config {
+    char *file;
     char exp_result;
 };
 
 /* function declarations */
+Suite *make_base_suite(void);
 Suite *make_util_suite(void);
 #endif

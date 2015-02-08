@@ -67,7 +67,7 @@ static struct test_check_access _test_check_access_lt[] =
         { "cn=blub,dc=abc", NULL, 0 },
     };
 
-static struct test_validate_x509 _test_validate_x509[] =
+static struct test_validate_x509 _test_validate_x509_lt[] =
     {
         { "not_trusted_ca.pem", 0 },
         { "trusted_ca_but_expired.pem", 0 },
@@ -119,20 +119,19 @@ START_TEST
                         strncat(exp_ssh_rsa, x509_info.ssh_key, sizeof(exp_ssh_rsa) - strlen(exp_ssh_rsa) - 1);
                         ck_assert_str_eq(ssh_rsa, exp_ssh_rsa);
                     } else {
-                        printf("PEM_read_PUBKEY() failed ('%s')\n", pem_file_abs);
+                        ck_abort_msg("PEM_read_PUBKEY() failed ('%s')", pem_file_abs);
                     }
                     fclose(f_pem_file);
                 } else {
-                    printf("fopen() failed ('%s')\n", pem_file_abs);
+                    ck_abort_msg("fopen() failed ('%s')", pem_file_abs);
                 }
             } else {
-                printf("parsing failure\n");
+                ck_abort_msg("parsing failure");
             }
         }
         fclose(fh_oneliner);
     } else {
-        printf("fopen() failed ('%s')\n", oneliner);
-        exit(-1);
+        ck_abort_msg("fopen() failed ('%s')", oneliner);
     }
 }
 END_TEST
@@ -163,7 +162,7 @@ START_TEST
     if (pkey_static != NULL) {
         extract_ssh_key(pkey_static, NULL);
     } else {
-        printf("PEM_read_bio_PUBKEY() failed\n");
+        ck_abort_msg("PEM_read_bio_PUBKEY() failed");
     }
     BIO_free(pkey_mem_bio);
 }
@@ -172,32 +171,32 @@ END_TEST
 START_TEST
 (test_config_lookup)
 {
-    int exp_result = config_lookup(10, "foo");
-    ck_assert_int_eq(-EINVAL, exp_result);
-    exp_result = config_lookup(10, NULL);
-    ck_assert_int_eq(-EINVAL, exp_result);
-    exp_result = config_lookup(10, "LOG_FTP");
-    ck_assert_int_eq(-EINVAL, exp_result);
-    exp_result = config_lookup(SYSLOG, "foo");
-    ck_assert_int_eq(-EINVAL, exp_result);
-    exp_result = config_lookup(SYSLOG, "LOG_FTP");
-    ck_assert_int_eq(LOG_FTP, exp_result);
-    exp_result = config_lookup(SYSLOG, NULL);
-    ck_assert_int_eq(-EINVAL, exp_result);
-    exp_result = config_lookup(LIBLDAP, NULL);
-    ck_assert_int_eq(-EINVAL, exp_result);
+    int rc = config_lookup(10, "foo");
+    ck_assert_int_eq(rc, -EINVAL);
+    rc = config_lookup(10, NULL);
+    ck_assert_int_eq(rc, -EINVAL);
+    rc = config_lookup(10, "LOG_FTP");
+    ck_assert_int_eq(rc, -EINVAL);
+    rc = config_lookup(SYSLOG, "foo");
+    ck_assert_int_eq(rc, -EINVAL);
+    rc = config_lookup(SYSLOG, "LOG_FTP");
+    ck_assert_int_eq(rc, LOG_FTP);
+    rc = config_lookup(SYSLOG, NULL);
+    ck_assert_int_eq(rc, -EINVAL);
+    rc = config_lookup(LIBLDAP, NULL);
+    ck_assert_int_eq(rc, -EINVAL);
 }
 END_TEST
 
 START_TEST
 (test_set_log_facility)
 {
-    int exp_result = set_log_facility("LOG_KERN");
-    ck_assert_int_eq(0, exp_result);
-    exp_result = set_log_facility("LOG_KERNEL");
-    ck_assert_int_eq(-EINVAL, exp_result);
-    exp_result = set_log_facility(NULL);
-    ck_assert_int_eq(-EINVAL, exp_result);
+    int rc = set_log_facility("LOG_KERN");
+    ck_assert_int_eq(rc, 0);
+    rc = set_log_facility("LOG_KERNEL");
+    ck_assert_int_eq(rc, -EINVAL);
+    rc = set_log_facility(NULL);
+    ck_assert_int_eq(rc, -EINVAL);
 }
 END_TEST
 
@@ -225,8 +224,8 @@ END_TEST
 START_TEST
 (test_validate_x509)
 {
-    char *x509_filename = _test_validate_x509[_i].filename;
-    char exp_result = _test_validate_x509[_i].exp_result;
+    char *x509_filename = _test_validate_x509_lt[_i].file;
+    char exp_result = _test_validate_x509_lt[_i].exp_result;
 
     struct pam_openssh_x509_info x509_info;
     x509_info.has_valid_cert = -1;
@@ -244,17 +243,17 @@ START_TEST
                 validate_x509(x509, ca_certs_dir, &x509_info);
                 ck_assert_int_eq(x509_info.has_valid_cert, exp_result);
             } else {
-                printf("PEM_read_X509() failed\n");
+                ck_abort_msg("PEM_read_X509() failed");
             }
             rc = fclose(x509_file);
             if (rc != 0) {
-                printf("fclose() failed ('%s')\n", strerror(errno));
+                ck_abort_msg("fclose() failed ('%s')", strerror(errno));
             }
         } else {
-            printf("fopen() failed ('%s')\n", x509_filename);
+            ck_abort_msg("fopen() failed ('%s')", x509_filename);
         }
     } else {
-        printf("chdir() failed ('%s')\n", strerror(errno));
+        ck_abort_msg("chdir() failed ('%s')", strerror(errno));
     }
 }
 END_TEST
@@ -286,7 +285,7 @@ make_util_suite(void)
     tcase_add_test(tc_ssh, test_extract_ssh_key_params);
 
     /* x509 test cases */
-    int length_validate_x509 = sizeof(_test_validate_x509) / sizeof(struct test_validate_x509);
+    int length_validate_x509 = sizeof(_test_validate_x509_lt) / sizeof(struct test_validate_x509);
     tcase_add_loop_test(tc_x509, test_validate_x509, 0, length_validate_x509);
 
     return s;

@@ -375,15 +375,9 @@ cfg_validate_cacerts_dir(cfg_t *cfg, cfg_opt_t *opt)
     return 0;
 }
 
-PAM_EXTERN int
-pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
+static int
+init_and_parse_config(const char *cfg_file, cfg_t **cfg)
 {
-    /* first argument must be path to config file */
-    if (argc != 1) {
-        LOG_FATAL("arg count != 1");
-        goto auth_err;
-    }
-
     /* setup config options */
     cfg_opt_t opts[] = { 
         CFG_STR("log_facility", NULL, CFGF_NODEFAULT),
@@ -404,22 +398,40 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     }; 
 
     /* initialize config */
-    cfg_t *cfg = cfg_init(opts, CFGF_NOCASE);
+    *cfg = cfg_init(opts, CFGF_NOCASE);
     /* register callbacks */
-    cfg_set_error_function(cfg, &cfg_error_handler);
-    cfg_set_validate_func(cfg, "log_facility", &cfg_validate_log_facility);
-    cfg_set_validate_func(cfg, "ldap_uri", &cfg_validate_ldap_uri);
-    cfg_set_validate_func(cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
-    cfg_set_validate_func(cfg, "cacerts_dir", &cfg_validate_cacerts_dir);
+    cfg_set_error_function(*cfg, &cfg_error_handler);
+    cfg_set_validate_func(*cfg, "log_facility", &cfg_validate_log_facility);
+    cfg_set_validate_func(*cfg, "ldap_uri", &cfg_validate_ldap_uri);
+    cfg_set_validate_func(*cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
+    cfg_set_validate_func(*cfg, "cacerts_dir", &cfg_validate_cacerts_dir);
 
     /* parse config */
-    switch (cfg_parse(cfg, argv[0])) {
+    switch (cfg_parse(*cfg, cfg_file)) {
         case CFG_SUCCESS:
-            break;
+            return 0;
         case CFG_FILE_ERROR:
-            cfg_error(cfg, "cfg_parse(): file: '%s', '%s'", argv[0], strerror(errno));
+            cfg_error(*cfg, "cfg_parse(): file: '%s', '%s'", cfg_file, strerror(errno));
         case CFG_PARSE_ERROR:
-            goto auth_err_and_free_config;
+            return -1;
+    }
+}
+
+PAM_EXTERN int
+pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+    /* first argument must be path to config file */
+    if (argc != 1) {
+        LOG_FATAL("arg count != 1");
+        goto auth_err;
+    }
+
+    /* initialize and parse config */
+    const char *cfg_file = argv[0];
+    cfg_t *cfg = NULL;
+    int rc = init_and_parse_config(cfg_file, &cfg);
+    if (rc != 0) {
+        goto auth_err_and_free_config;
     }
 
     /* initialize data transfer object */
@@ -432,7 +444,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     }
 
     /* make data transfer object available to module stack */
-    int rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
+    rc = pam_set_data(pamh, "x509_info", x509_info, &cleanup_x509_info);
     if (rc != PAM_SUCCESS) {
         LOG_FATAL("pam_set_data()");
         goto auth_err_and_free_config;
