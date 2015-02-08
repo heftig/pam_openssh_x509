@@ -245,10 +245,7 @@ START_TEST
             } else {
                 ck_abort_msg("PEM_read_X509() failed");
             }
-            rc = fclose(x509_file);
-            if (rc != 0) {
-                ck_abort_msg("fclose() failed ('%s')", strerror(errno));
-            }
+            fclose(x509_file);
         } else {
             ck_abort_msg("fopen() failed ('%s')", x509_filename);
         }
