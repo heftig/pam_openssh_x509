@@ -364,10 +364,7 @@ cfg_validate_cacerts_dir(cfg_t *cfg, cfg_opt_t *opt)
     /* check if directory exists */
     DIR *cacerts_dir_stream = opendir(cacerts_dir);
     if (cacerts_dir_stream != NULL) {
-        int rc = closedir(cacerts_dir_stream);
-        if (rc != 0) {
-            LOG_FAIL("closedir(): '%s'", strerror(errno));
-        }
+        closedir(cacerts_dir_stream);
     } else {
         cfg_error(cfg, "cfg_validate_cacerts_dir(): option: '%s', value: '%s' (%s)", cfg_opt_name(opt), cacerts_dir, strerror(errno));
         return -1;
@@ -378,9 +375,14 @@ cfg_validate_cacerts_dir(cfg_t *cfg, cfg_opt_t *opt)
 static int
 init_and_parse_config(const char *cfg_file, cfg_t **cfg)
 {
+    if ((cfg_file == NULL) || (cfg == NULL)) {
+        LOG_FATAL("init_and_parse_config(): cfg_file or cfg is NULL");
+        return -1;
+    }
+
     /* setup config options */
     cfg_opt_t opts[] = { 
-        CFG_STR("log_facility", NULL, CFGF_NODEFAULT),
+        CFG_STR("log_facility", "LOG_LOCAL1", CFGF_NONE),
         CFG_STR("ldap_uri", "ldap://localhost:389", CFGF_NONE),
         CFG_STR("ldap_bind_dn", "cn=directory_manager,ou=ssh,o=hq", CFGF_NONE),
         CFG_STR("ldap_pwd", "test123", CFGF_NONE),

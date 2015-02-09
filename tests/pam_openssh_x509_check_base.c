@@ -25,20 +25,30 @@
 static struct test_init_and_parse_config _test_init_and_parse_config_lt[] =
 {
     { "valid.conf", 0 },
+    { "cfg_str_to_int_parser_libldap_ldap_scope_negative_0.conf", -1 },
+    { "cfg_str_to_int_parser_libldap_ldap_scope_negative_1.conf", -1 },
+    { "cfg_str_to_int_parser_libldap_ldap_scope_negative_2.conf", -1 },
+    { "cfg_str_to_int_parser_libldap_ldap_version_negative.conf", -1 },
+    { "cfg_validate_log_facility_negative.conf", -1 },
+    { "cfg_validate_ldap_uri_negative.conf", -1 },
+    { "cfg_validate_ldap_search_timeout_negative.conf", -1 },
+    { "cfg_validate_cacerts_dir_negative_0.conf", -1 },
+    { "cfg_validate_cacerts_dir_negative_1.conf", -1 },
+    { "cfg_validate_cacerts_dir_negative_2.conf", -1 },
 };
 
 START_TEST
 (test_init_and_parse_config)
 {
     char *config_file = _test_init_and_parse_config_lt[_i].file;
-    char exp_result = _test_init_and_parse_config_lt[_i].exp_result;
+    int exp_result = _test_init_and_parse_config_lt[_i].exp_result;
 
     char *configs_dir = CONFIGSDIR;
 
     int rc = chdir(configs_dir);
     if (rc == 0) {
         cfg_t *cfg = NULL;
-        int rc = init_and_parse_config(config_file, &cfg);
+        rc = init_and_parse_config(config_file, &cfg);
         ck_assert_int_eq(rc, exp_result);
     } else {
         ck_abort_msg("chdir() failed ('%s')", strerror(errno));
@@ -49,7 +59,22 @@ END_TEST
 START_TEST
 (test_init_and_parse_config_params)
 {
+    char *config_file = _test_init_and_parse_config_lt[0].file;
+    char *configs_dir = CONFIGSDIR;
+    cfg_t *cfg = NULL;
 
+    int rc = init_and_parse_config(NULL, &cfg);
+    ck_assert_int_eq(rc, -1);
+    rc = init_and_parse_config(NULL, NULL);
+    ck_assert_int_eq(rc, -1);
+
+    rc = chdir(configs_dir);
+    if (rc == 0) {
+        rc = init_and_parse_config(config_file, NULL);
+        ck_assert_int_eq(rc, -1);
+    } else {
+        ck_abort_msg("chdir() failed ('%s')", strerror(errno));
+    }
 }
 END_TEST
 

@@ -259,31 +259,6 @@ release_config(cfg_t *cfg)
     cfg_free(cfg);
 }
 
-/*
-void
-get_fqdn(char *buffer, int buffer_length)
-{
-    char hostname[HOSTNAME_BUFFER_SIZE];
-    int rc = gethostname(hostname, sizeof(hostname));
-    if (rc == 0) {
-        struct addrinfo *addrinfo = NULL;
-        struct addrinfo hints;
-        memset(&hints, 0, sizeof(hints));
-        hints.ai_flags = AI_CANONNAME;
-        hints.ai_family = AF_UNSPEC;
-
-        rc = getaddrinfo(hostname, NULL, &hints, &addrinfo);
-        if (rc == 0) {
-            if (addrinfo->ai_canonname != NULL) {
-                buffer[buffer_length - 1] = '\0';
-                strncpy(buffer, addrinfo->ai_canonname, buffer_length - 1);
-            }
-            freeaddrinfo(addrinfo);
-        }
-    }
-}
-*/
-
 void
 check_access(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info)
 {
@@ -365,13 +340,8 @@ free_algorithms:
 void
 extract_ssh_key(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
 {
-    if (pkey == NULL) {
-        LOG_FAIL("extract_ssh_key(): pkey == NULL");
-        return;
-    }
-
-    if (x509_info == NULL) {
-        LOG_FAIL("extract_ssh_key(): x509_info == NULL");
+    if ((pkey == NULL) || (x509_info == NULL)) {
+        LOG_FATAL("extract_ssh_key(): pkey or x509_info is NULL");
         return;
     }
 

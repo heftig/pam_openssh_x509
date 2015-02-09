@@ -40,7 +40,7 @@ struct test_validate_x509 {
 
 struct test_init_and_parse_config {
     char *file;
-    char exp_result;
+    int exp_result;
 };
 
 /* function declarations */
