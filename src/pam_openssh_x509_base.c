@@ -83,30 +83,11 @@ cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
 }
 
 static void
-query_ldap(cfg_t *cfg)
+retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg)
 {
-    LDAP *ldap_handle = NULL;
-    LDAPMessage *ldap_result = NULL;
-    struct berelement *ber = NULL;
-    struct berval **bvals = NULL;
-    char *attr = NULL;
-    int rc, msgtype;
-
-    struct timeval search_timeout = { cfg_getint(cfg, "ldap_search_timeout"), 0 };
-    int sizelimit = 1;
-    int ldap_version = cfg_getint(cfg, "ldap_version");
-    
-    char *attrs[] = { cfg_getstr(cfg, "ldap_attr_cert"), cfg_getstr(cfg, "ldap_attr_access"), '\0' };
-    struct berval cred = { strlen(cfg_getstr(cfg, "ldap_pwd")), cfg_getstr(cfg, "ldap_pwd") };
-
-    /* construct filter */
-    char filter[SEARCH_FILTER_BUFFER_SIZE];
-    strncpy(filter, cfg_getstr(cfg, "ldap_attr_rdn_person"), sizeof(filter));
-    strncat(filter, "=", sizeof(filter) - strlen(filter) - 1);
-    strncat(filter, x509_info->uid, sizeof(filter) - strlen(filter) - 1);
-
     /* init handle */
-    rc = ldap_initialize(&ldap_handle, cfg_getstr(cfg, "ldap_uri"));
+    LDAP *ldap_handle = NULL;
+    int rc = ldap_initialize(&ldap_handle, cfg_getstr(cfg, "ldap_uri"));
     if (rc == LDAP_SUCCESS) {
         LOG_SUCCESS("ldap_initialize()");
     } else {
@@ -115,6 +96,7 @@ query_ldap(cfg_t *cfg)
     }
 
     /* set version */
+    int ldap_version = cfg_getint(cfg, "ldap_version");
     rc = ldap_set_option(ldap_handle, LDAP_OPT_PROTOCOL_VERSION, &ldap_version);
     if (rc != LDAP_OPT_SUCCESS) {
         LOG_CRITICAL("ldap_set_option(): key: LDAP_OPT_PROTOCOL_VERSION, value: %i", ldap_version);
@@ -122,6 +104,7 @@ query_ldap(cfg_t *cfg)
     }
 
     /* bind to server */
+    struct berval cred = { strlen(cfg_getstr(cfg, "ldap_pwd")), cfg_getstr(cfg, "ldap_pwd") };
     rc = ldap_sasl_bind_s(ldap_handle, cfg_getstr(cfg, "ldap_bind_dn"), LDAP_SASL_SIMPLE, &cred, NULL, NULL, NULL);
     memset(cfg_getstr(cfg, "ldap_pwd"), 0, strlen(cfg_getstr(cfg, "ldap_pwd")));
 
@@ -133,17 +116,30 @@ query_ldap(cfg_t *cfg)
         /*
          * search people tree for given uid and retrieve group memberships / x509 certificates
          */
+
+        /* construct search filter */
+        char filter[SEARCH_FILTER_BUFFER_SIZE];
+        strncpy(filter, cfg_getstr(cfg, "ldap_attr_rdn_person"), sizeof(filter));
+        strncat(filter, "=", sizeof(filter) - strlen(filter) - 1);
+        strncat(filter, x509_info->uid, sizeof(filter) - strlen(filter) - 1);
+
+        char *attrs[] = { cfg_getstr(cfg, "ldap_attr_cert"), cfg_getstr(cfg, "ldap_attr_access"), '\0' };
+        struct timeval search_timeout = { cfg_getint(cfg, "ldap_search_timeout"), 0 };
+        int sizelimit = 1;
+        LDAPMessage *ldap_result = NULL;
+
         rc = ldap_search_ext_s(ldap_handle, cfg_getstr(cfg, "ldap_base"), cfg_getint(cfg, "ldap_scope"), filter, attrs, 0, NULL, NULL, &search_timeout, sizelimit, &ldap_result);
         if (rc == LDAP_SUCCESS) {
             LOG_SUCCESS("ldap_search_ext_s()");
             /*
              * iterate over matching entries
              *
-             * even though sizelimit is 1 at least 2 messages will be returned (1x LDAP_RES_SEARCH_ENTRY + 1x LDAP_RES_SEARCH_ENTRY)
+             * even though sizelimit is 1 at least 2 messages will be returned (1x LDAP_RES_SEARCH_ENTRY + 1x LDAP_RES_SEARCH_RESULT)
              * so that we need to iterate over the result set instead of just retrieve and process the first message
              */
             for (ldap_result = ldap_first_message(ldap_handle, ldap_result); ldap_result != NULL; ldap_result = ldap_next_message(ldap_handle, ldap_result)) {
-                switch (msgtype = ldap_msgtype(ldap_result)) {
+                int msgtype = ldap_msgtype(ldap_result);
+                switch (msgtype) {
                     case LDAP_RES_SEARCH_ENTRY:
                         {
                             char *user_dn = ldap_get_dn(ldap_handle, ldap_result); 
@@ -159,6 +155,8 @@ query_ldap(cfg_t *cfg)
                             /*
                              * iterate over all requested attributes
                              */
+                            char *attr = NULL;
+                            struct berelement *ber = NULL;
                             for (attr = ldap_first_attribute(ldap_handle, ldap_result, &ber); attr != NULL; attr = ldap_next_attribute(ldap_handle, ldap_result, ber)) {
                                 bool is_attr_access = strcmp(attr, cfg_getstr(cfg, "ldap_attr_access")) == 0 ? 1 : 0;
                                 bool is_attr_cert = strcmp(attr, cfg_getstr(cfg, "ldap_attr_cert")) == 0 ? 1 : 0;
@@ -168,6 +166,7 @@ query_ldap(cfg_t *cfg)
                                  * result of ldap_get_values_len() is an array in order to handle
                                  * mutivalued attributes
                                  */
+                                struct berval **bvals = NULL;
                                 if ((bvals = ldap_get_values_len(ldap_handle, ldap_result, attr)) != NULL) {
                                     int i;
                                     for (i = 0; bvals[i] != '\0'; i++) {
@@ -318,7 +317,6 @@ cfg_str_to_int_parser_libldap(cfg_t *cfg, cfg_opt_t *opt, const char *value, voi
         cfg_error(cfg, "cfg_value_parser_int(): option: '%s', value: '%s'", cfg_opt_name(opt), value);
         return -1; 
     }
-
     long int *ptr_result = result;
     *ptr_result = result_value;
     return 0;
@@ -397,7 +395,7 @@ init_and_parse_config(const char *cfg_file, cfg_t **cfg)
         CFG_STR("authorized_keys_file", "/usr/local/etc/ssh/keystore/%u/authorized_keys", CFGF_NONE),
         CFG_STR("cacerts_dir", "/usr/local/etc/ssh/cacerts", CFGF_NONE),
         CFG_END()
-    }; 
+    };
 
     /* initialize config */
     *cfg = cfg_init(opts, CFGF_NOCASE);
@@ -409,7 +407,8 @@ init_and_parse_config(const char *cfg_file, cfg_t **cfg)
     cfg_set_validate_func(*cfg, "cacerts_dir", &cfg_validate_cacerts_dir);
 
     /* parse config */
-    switch (cfg_parse(*cfg, cfg_file)) {
+    int rc = cfg_parse(*cfg, cfg_file);
+    switch (rc) {
         case CFG_SUCCESS:
             return 0;
         case CFG_FILE_ERROR:
@@ -512,7 +511,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     /*
      * query ldap server and retrieve access permission and certificate of user
      */
-    query_ldap(cfg);
+    retrieve_access_permission_and_x509_from_ldap(cfg);
 
     /* free config */
     release_config(cfg);
