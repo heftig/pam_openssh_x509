@@ -36,11 +36,8 @@
 #include "pam_openssh_x509.h"
 
 #define SEARCH_FILTER_BUFFER_SIZE           512
-#define CERT_INFO_STRING_BUFFER_SIZE        1024
 #define UID_BUFFER_SIZE                     33
 #define AUTHORIZED_KEYS_FILE_BUFFER_SIZE    1024
-
-static struct pam_openssh_x509_info *x509_info = NULL;
 
 static void
 cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
@@ -69,6 +66,7 @@ cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
      * posix threads in OpenSSH and to be prepared for possible changes
      * in OpenSSH.
      */
+    struct pam_openssh_x509_info *x509_info = data;
     LOG_MSG("freeing x509_info");
     free(x509_info->log_facility);
     free(x509_info->subject);
@@ -83,7 +81,7 @@ cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
 }
 
 static void
-retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg)
+retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x509_info *x509_info)
 {
     /* init handle */
     LDAP *ldap_handle = NULL;
@@ -166,8 +164,8 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg)
                                  * result of ldap_get_values_len() is an array in order to handle
                                  * mutivalued attributes
                                  */
-                                struct berval **bvals = NULL;
-                                if ((bvals = ldap_get_values_len(ldap_handle, ldap_result, attr)) != NULL) {
+                                struct berval **bvals = ldap_get_values_len(ldap_handle, ldap_result, attr);
+                                if (bvals != NULL) {
                                     int i;
                                     for (i = 0; bvals[i] != '\0'; i++) {
                                         char *value = bvals[i]->bv_val;
@@ -371,7 +369,7 @@ cfg_validate_cacerts_dir(cfg_t *cfg, cfg_opt_t *opt)
 }
 
 static int
-init_and_parse_config(const char *cfg_file, cfg_t **cfg)
+init_and_parse_config(cfg_t **cfg, const char *cfg_file)
 {
     if ((cfg_file == NULL) || (cfg == NULL)) {
         LOG_FATAL("init_and_parse_config(): cfg_file or cfg is NULL");
@@ -430,13 +428,13 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     /* initialize and parse config */
     const char *cfg_file = argv[0];
     cfg_t *cfg = NULL;
-    int rc = init_and_parse_config(cfg_file, &cfg);
+    int rc = init_and_parse_config(&cfg, cfg_file);
     if (rc != 0) {
         goto auth_err_and_free_config;
     }
 
     /* initialize data transfer object */
-    x509_info = malloc(sizeof(*x509_info));
+    struct pam_openssh_x509_info *x509_info = malloc(sizeof(struct pam_openssh_x509_info));
     if (x509_info != NULL) {
         init_data_transfer_object(x509_info);
     } else {
@@ -511,7 +509,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     /*
      * query ldap server and retrieve access permission and certificate of user
      */
-    retrieve_access_permission_and_x509_from_ldap(cfg);
+    retrieve_access_permission_and_x509_from_ldap(cfg, x509_info);
 
     /* free config */
     release_config(cfg);

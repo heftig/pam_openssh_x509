@@ -48,7 +48,7 @@ START_TEST
     int rc = chdir(configs_dir);
     if (rc == 0) {
         cfg_t *cfg = NULL;
-        rc = init_and_parse_config(config_file, &cfg);
+        rc = init_and_parse_config(&cfg, config_file);
         ck_assert_int_eq(rc, exp_result);
     } else {
         ck_abort_msg("chdir() failed ('%s')", strerror(errno));
@@ -63,14 +63,14 @@ START_TEST
     char *configs_dir = CONFIGSDIR;
     cfg_t *cfg = NULL;
 
-    int rc = init_and_parse_config(NULL, &cfg);
+    int rc = init_and_parse_config(&cfg, NULL);
     ck_assert_int_eq(rc, -1);
     rc = init_and_parse_config(NULL, NULL);
     ck_assert_int_eq(rc, -1);
 
     rc = chdir(configs_dir);
     if (rc == 0) {
-        rc = init_and_parse_config(config_file, NULL);
+        rc = init_and_parse_config(NULL, config_file);
         ck_assert_int_eq(rc, -1);
     } else {
         ck_abort_msg("chdir() failed ('%s')", strerror(errno));
