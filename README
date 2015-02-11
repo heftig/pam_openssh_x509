@@ -43,9 +43,9 @@ Operating model
 
 The idea behind pam_openssh_x509 is to make managed x509 certificates accessible
 for OpenSSH public key authentication. Contrary to other approaches the source
-code of OpenSSH wont be altered making it sort of independent from changes to
-OpenSSH. Also it supports components usually found in larger enterprises
-creating an integrated solution for the OpenSSH key management. It therefore
+code of OpenSSH remains untouched making it relatively independent from changes
+to OpenSSH. It also supports components usually found in larger enterprises
+creating an integrated solution for the OpenSSH key management. Therefore it
 prevents the installation and maintenance of a whole new bloated software for
 managing OpenSSH key material yet raising the security level of the keys and
 reducing costs.
@@ -58,7 +58,7 @@ The operating model consists of the following components:
  * SSH client supporting Smartcards (e.g. PuTTY-CAC) (optional)
  * pam_openssh_x509
 
-The tasks of each component is as follows:
+The tasks of the components can be described as follows:
 
 The PKI is responsible for the management of the lifecycle of x509 certificates
 
@@ -120,10 +120,10 @@ or revoke server access. All data is stored in a data transfer object that is
 made accessible for downstream modules. The audit module is a passive component
 that only logs the content of the data transfer object. The actual modification
 of the authorized_keys file will be performed by the validation module that can
-be different for various environments. For example in a testing environment you
-wouldnt mind if the users certificate is not valid anymore whereas you would in
-production. The validation module is the only module that has to be adjusted to
-individual needs.
+be different for various environments. For example an expired user certificate
+may not cause any trouble in a testing environment, whereas it would certainly
+gain significance in production. The validation module is the only module that
+has to be adjusted to individual needs.
 
 
 Installation
@@ -135,7 +135,7 @@ see INSTALL
 Contribute
 ----------
 
-You like the project and wanna join? Feel free to become part.
+You like the project and wanna join? Feel free to become part of it.
 Every help is highly appreciated! Always searching for:
 
  * Developers
