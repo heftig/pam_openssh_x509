@@ -19,7 +19,9 @@
 
 #include <syslog.h>
 #include <ldap.h>
+#include <strings.h>
 #include <errno.h>
+#include <string.h>
 #include <stdbool.h>
 
 struct __config_lookup_table {
@@ -191,7 +193,7 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
 /*
  * CAUTION!
  *
- * before calling percent_expand() make sure that you filter values
+ * before calling substitute_token() make sure that you filter values
  * that can lead to unwanted behavior.
  *
  * for example if the substitution value for the token can be chosen
@@ -209,7 +211,7 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
  *
  */
 void
-percent_expand(char token, char *subst, char *src, char *dst, int dst_length)
+substitute_token(char token, char *subst, char *src, char *dst, int dst_length)
 {
     if (subst != NULL && src != NULL && dst != NULL && dst_length > 0) {
         bool cdt = 0;
@@ -318,14 +320,15 @@ free_algorithms:
 }
 
 void
-extract_ssh_key(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
+pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
 {
     if ((pkey == NULL) || (x509_info == NULL)) {
-        LOG_FATAL("extract_ssh_key(): pkey or x509_info is NULL");
+        LOG_FATAL("pkey_to_authorized_keys(): pkey or x509_info is NULL");
         return;
     }
 
-    switch (EVP_PKEY_type(pkey->type)) {
+    int pkey_type = EVP_PKEY_type(pkey->type);
+    switch (pkey_type) {
         case EVP_PKEY_RSA:
             {
                 x509_info->ssh_keytype = strdup("ssh-rsa");

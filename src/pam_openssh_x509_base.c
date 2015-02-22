@@ -17,11 +17,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdarg.h>
 #include <string.h>
 #include <stdbool.h>
-#include <ctype.h>
-#include <syslog.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <pwd.h>
@@ -33,6 +30,7 @@
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>
 
+#include "pam_openssh_x509_config.h"
 #include "pam_openssh_x509_util.h"
 
 #define LDAP_SEARCH_FILTER_BUFFER_SIZE      512
@@ -81,7 +79,7 @@ cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
 }
 
 static void
-retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x509_info *x509_info)
+retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x509_info *x509_info, X509 **x509)
 {
     /* init handle */
     LDAP *ldap_handle = NULL;
@@ -111,9 +109,7 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
         LOG_SUCCESS("ldap_sasl_bind_s()");
         x509_info->directory_online = 1;
 
-        /*
-         * search people tree for given uid and retrieve group memberships / x509 certificates
-         */
+        /* search people tree for given uid and retrieve group memberships / x509 certificates */
 
         /* construct search filter */
         char filter[LDAP_SEARCH_FILTER_BUFFER_SIZE];
@@ -142,91 +138,65 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
                         {
                             char *user_dn = ldap_get_dn(ldap_handle, ldap_result); 
                             if (user_dn == NULL) {
-                                /*
-                                 * cannot access ldap_handle->ld_errno as structure
-                                 * is opaque...
-                                 */
+                                /* cannot access ldap_handle->ld_errno as structure is opaque */
                                 LOG_CRITICAL("ldap_get_dn(): '%s'", "user_dn == NULL");
                             } else {
                                 LOG_MSG("user_dn: %s", user_dn);
                             }
-                            /*
-                             * iterate over all requested attributes
-                             */
+
+                            /* iterate over all requested attributes */
                             char *attr = NULL;
                             struct berelement *ber = NULL;
                             for (attr = ldap_first_attribute(ldap_handle, ldap_result, &ber); attr != NULL; attr = ldap_next_attribute(ldap_handle, ldap_result, ber)) {
                                 bool is_attr_access = strcmp(attr, cfg_getstr(cfg, "ldap_attr_access")) == 0 ? 1 : 0;
                                 bool is_attr_cert = strcmp(attr, cfg_getstr(cfg, "ldap_attr_cert")) == 0 ? 1 : 0;
-                                /*
-                                 * iterate over all values for attribute
-                                 *
-                                 * result of ldap_get_values_len() is an array in order to handle
-                                 * mutivalued attributes
-                                 */
-                                struct berval **bvals = ldap_get_values_len(ldap_handle, ldap_result, attr);
-                                if (bvals != NULL) {
-                                    int i;
-                                    for (i = 0; bvals[i] != '\0'; i++) {
-                                        char *value = bvals[i]->bv_val;
-                                        ber_len_t len = bvals[i]->bv_len;
 
-                                        /*
-                                         * process group memberships
-                                         */
+                                struct berval **attr_values = ldap_get_values_len(ldap_handle, ldap_result, attr);
+                                if (attr_values != NULL) {
+                                    /*
+                                     * iterate over all values for attribute
+                                     *
+                                     * result of ldap_get_values_len() is an array in order to handle
+                                     * mutivalued attributes
+                                     */
+                                    int i;
+                                    for (i = 0; attr_values[i] != '\0'; i++) {
+                                        char *value = attr_values[i]->bv_val;
+                                        ber_len_t len = attr_values[i]->bv_len;
+
+                                        /* process group memberships */
                                         if (is_attr_access) {
-                                            /* stop looping over group memberships when access is already granted */
-                                            if (x509_info->has_access == 1) {
-                                                break;
-                                            }
                                             /* check access permission based on group membership and store result */
                                             LOG_MSG("group_dn: %s", value);
                                             check_access(value, cfg_getstr(cfg, "ldap_group_identifier"), x509_info);
-
-                                        /*
-                                         * process x509 certificates
-                                         */ 
-                                        } else if (is_attr_cert) {
-                                            /* stop looping over x509 certificates when a valid one has already been found */
-                                            if (x509_info->has_cert == 1) {
+                                            /* stop looping over group memberships when access has been granted */
+                                            if (x509_info->has_access == 1) {
                                                 break;
                                             }
+
+                                        /* process x509 certificates */
+                                        } else if (is_attr_cert) {
                                             /* decode certificate */
-                                            X509 *x509 = d2i_X509(NULL, (const unsigned char **) &value, len);
-                                            if (x509 == NULL) {
+                                            *x509 = d2i_X509(NULL, (const unsigned char **) &value, len);
+                                            if (*x509 == NULL) {
                                                 LOG_CRITICAL("d2i_X509(): cannot decode certificate");
                                                 /* try next certificate if existing */
                                                 continue;
                                             }
                                             x509_info->has_cert = 1;
-
-                                            /* validate certificate */
-                                            validate_x509(x509, cfg_getstr(cfg, "cacerts_dir"), x509_info);
-                                            x509_info->subject = X509_NAME_oneline(X509_get_subject_name(x509), NULL, 0);
-                                            x509_info->serial = BN_bn2hex(ASN1_INTEGER_to_BN(X509_get_serialNumber(x509), 0));
-                                            x509_info->issuer = X509_NAME_oneline(X509_get_issuer_name(x509), NULL, 0);
-
-                                            /* convert public key to OpenSSH format */
-                                            EVP_PKEY *pkey = X509_get_pubkey(x509);
-                                            if (pkey != NULL) {
-                                                extract_ssh_key(pkey, x509_info);
-                                                EVP_PKEY_free(pkey);
-                                            } else {
-                                                LOG_CRITICAL("X509_get_pubkey(): unable to load public key");
-                                            }
-                                            /* free x509 structure */
-                                            X509_free(x509);
+                                            /* stop looping over x509 certificates when a valid one has been found */
+                                            break;
                                         } else {
                                             /* unlikely */
                                             LOG_FAIL("unhandled (not requested) attribute: '%s'", attr);
                                         }
                                     }
+                                    /* free attribute values array after each iteration */
+                                    ldap_value_free_len(attr_values);
                                 } else {
                                     /* unlikely */
                                     LOG_CRITICAL("ldap_get_values_len()");
                                 }
-                                /* free values structure after each iteration */
-                                ldap_value_free_len(bvals);
                             }
                             /* free attributes structure */
                             ber_free(ber, 0);
@@ -369,7 +339,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     /* expand authorized_keys_file option and add to data transfer object */
     char *expanded_path = malloc(AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
     if (expanded_path != NULL) {
-        percent_expand('u', x509_info->uid, cfg_getstr(cfg, "authorized_keys_file"), expanded_path, AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
+        substitute_token('u', x509_info->uid, cfg_getstr(cfg, "authorized_keys_file"), expanded_path, AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
         x509_info->authorized_keys_file = expanded_path;
     } else {
         LOG_FATAL("malloc() failed");
@@ -385,10 +355,30 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         goto auth_err_and_free_config;
     }
 
-    /*
-     * query ldap server and retrieve access permission and certificate of user
-     */
-    retrieve_access_permission_and_x509_from_ldap(cfg, x509_info);
+    /* query ldap server and retrieve access permission and certificate of user */
+    X509 *x509 = NULL;
+    retrieve_access_permission_and_x509_from_ldap(cfg, x509_info, &x509);
+
+    /* process certificate if one has been found*/
+    if (x509 != NULL) {
+        /* validate certificate */
+        validate_x509(x509, cfg_getstr(cfg, "cacerts_dir"), x509_info);
+
+        x509_info->subject = X509_NAME_oneline(X509_get_subject_name(x509), NULL, 0);
+        x509_info->serial = BN_bn2hex(ASN1_INTEGER_to_BN(X509_get_serialNumber(x509), 0));
+        x509_info->issuer = X509_NAME_oneline(X509_get_issuer_name(x509), NULL, 0);
+
+        /* extract public key and convert to OpenSSH format */
+        EVP_PKEY *pkey = X509_get_pubkey(x509);
+        if (pkey != NULL) {
+            pkey_to_authorized_keys(pkey, x509_info);
+            EVP_PKEY_free(pkey);
+        } else {
+            LOG_CRITICAL("X509_get_pubkey(): unable to load public key");
+        }
+        /* free x509 structure */
+        X509_free(x509);
+    }
 
     /* free config */
     release_config(cfg);

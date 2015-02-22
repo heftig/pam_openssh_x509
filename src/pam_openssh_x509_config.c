@@ -21,6 +21,7 @@
 #include <ldap.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <string.h>
 
 #include "pam_openssh_x509_util.h"
 
