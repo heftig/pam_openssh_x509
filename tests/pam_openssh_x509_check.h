@@ -18,8 +18,10 @@
 #ifndef PAM_OPENSSH_X509_CHECK_H
 #define PAM_OPENSSH_X509_CHECK_H
 
+#include <check.h>
+
 /* type declarations */
-struct test_percent_expand {
+struct test_substitute_token {
     char token;
     char *subst;
     char *src;
@@ -27,7 +29,7 @@ struct test_percent_expand {
     char *exp_result;
 };
 
-struct test_check_access {
+struct test_check_access_permission {
     char *group_dn;
     char *identifier;
     char exp_result;
@@ -45,5 +47,7 @@ struct test_init_and_parse_config {
 
 /* function declarations */
 Suite *make_base_suite(void);
+Suite *make_config_suite(void);
 Suite *make_util_suite(void);
 #endif
+

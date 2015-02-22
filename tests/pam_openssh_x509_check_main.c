@@ -25,6 +25,7 @@ main(int argc, char **argv)
 {
     SRunner *sr = srunner_create(NULL);
     srunner_add_suite(sr, make_base_suite());
+    srunner_add_suite(sr, make_config_suite());
     srunner_add_suite(sr, make_util_suite());
 
     srunner_run_all(sr, CK_VERBOSE);

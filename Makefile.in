@@ -327,7 +327,10 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = tests/openssh_keys \
+EXTRA_DIST = tests/ca_certificates \
+             tests/configs \
+             tests/openssh_keys \
+             tests/x509_certificates \
              samples
 
 SUBDIRS = src . tests

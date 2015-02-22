@@ -168,7 +168,7 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
                                         if (is_attr_access) {
                                             /* check access permission based on group membership and store result */
                                             LOG_MSG("group_dn: %s", value);
-                                            check_access(value, cfg_getstr(cfg, "ldap_group_identifier"), x509_info);
+                                            check_access_permission(value, cfg_getstr(cfg, "ldap_group_identifier"), x509_info);
                                             /* stop looping over group memberships when access has been granted */
                                             if (x509_info->has_access == 1) {
                                                 break;

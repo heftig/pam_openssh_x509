@@ -242,7 +242,7 @@ substitute_token(char token, char *subst, char *src, char *dst, int dst_length)
 }
 
 void
-check_access(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info)
+check_access_permission(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info)
 {
     if (group_dn != NULL && identifier != NULL && x509_info != NULL) {
         /*

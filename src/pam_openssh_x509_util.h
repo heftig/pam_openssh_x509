@@ -39,7 +39,7 @@ enum __sections { SYSLOG, LIBLDAP };
 long int config_lookup(const enum __sections sec, const char *key);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
 void substitute_token(char token, char *subst, char *src, char *dst, int dst_length);
-void check_access(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info);
+void check_access_permission(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info);
 void validate_x509(X509 *x509, char *cacerts_dir, struct pam_openssh_x509_info *x509_info);
 void pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info);
 #endif
