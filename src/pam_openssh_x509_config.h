@@ -15,35 +15,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PAM_OPENSSH_X509_CHECK_H
-#define PAM_OPENSSH_X509_CHECK_H
+#ifndef PAM_OPENSSH_X509_CONFIG_H
+#define PAM_OPENSSH_X509_CONFIG_H
+
+#include <confuse.h>
+
+#define ERROR_MSG_BUFFER_SIZE 1024
 
 /* type declarations */
-struct test_percent_expand {
-    char token;
-    char *subst;
-    char *src;
-    unsigned int dst_length;
-    char *exp_result;
-};
-
-struct test_check_access {
-    char *group_dn;
-    char *identifier;
-    char exp_result;
-};
-
-struct test_validate_x509 {
-    char *file;
-    char exp_result;
-};
-
-struct test_init_and_parse_config {
-    char *file;
-    int exp_result;
-};
 
 /* function declarations */
-Suite *make_base_suite(void);
-Suite *make_util_suite(void);
+int init_and_parse_config(cfg_t **cfg, const char *cfg_file);
+void release_config(cfg_t *cfg);
 #endif
+

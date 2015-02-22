@@ -137,7 +137,7 @@ pam_openssh_x509_audit_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(LDFLAGS) -o $@
 pam_openssh_x509_base_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_pam_openssh_x509_base_la_OBJECTS = pam_openssh_x509_base.lo \
-	pam_openssh_x509_util.lo
+	pam_openssh_x509_config.lo pam_openssh_x509_util.lo
 pam_openssh_x509_base_la_OBJECTS =  \
 	$(am_pam_openssh_x509_base_la_OBJECTS)
 pam_openssh_x509_base_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -352,6 +352,7 @@ lib_LTLIBRARIES = pam_openssh_x509_base.la \
 
 include_HEADERS = pam_openssh_x509.h
 pam_openssh_x509_base_la_SOURCES = pam_openssh_x509_base.c \
+                                   pam_openssh_x509_config.c \
                                    pam_openssh_x509_util.c
 
 pam_openssh_x509_base_la_LDFLAGS = -avoid-version -module -export-dynamic -shared
@@ -453,6 +454,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_openssh_x509_audit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_openssh_x509_base.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_openssh_x509_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_openssh_x509_util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_openssh_x509_validate.Plo@am__quote@
 

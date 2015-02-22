@@ -103,8 +103,8 @@ pam_openssh_x509_base.so
  * checks access permissions through LDAP groups
  * validates x509 certificate
  * converts public key to OpenSSH key format
- * creates and updates data transfer object passed to further modules with all
-   determined information
+ * creates and updates data transfer object passed to downstream modules with
+   all determined information
 
 pam_openssh_x509_audit.so (optional)
 

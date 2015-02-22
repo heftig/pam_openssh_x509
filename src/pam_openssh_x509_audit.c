@@ -16,7 +16,7 @@
  */
 
 #include <stdlib.h>
-#include <syslog.h>
+#include <errno.h>
 
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>

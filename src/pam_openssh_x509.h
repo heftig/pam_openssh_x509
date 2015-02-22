@@ -15,30 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PAM_OPENSSH_X509
-#define _PAM_OPENSSH_X509
-
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <errno.h>
-#include <syslog.h>
-
-#include <openssl/bio.h>
-#include <openssl/evp.h>
-#include <openssl/bn.h>
-#include <openssl/pem.h>
-#include <openssl/x509.h>
-#include <confuse.h>
+#ifndef PAM_OPENSSH_X509_H
+#define PAM_OPENSSH_X509_H
 
 /* type declarations */
-enum __sections { SYSLOG, LIBLDAP };
-
-struct __config_lookup_table {
-    char *name;
-    int value;
-};
-
 struct pam_openssh_x509_info {
     char *uid;
     char *authorized_keys_file;
@@ -64,11 +44,5 @@ void LOG_CRITICAL(const char *fmt, ...);
 void LOG_FAIL(const char *fmt, ...);
 void LOG_MSG(const char *fmt, ...);
 int set_log_facility(const char *log_facility);
-long int config_lookup(const enum __sections sec, const char *key);
-void release_config(cfg_t *cfg);
-void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
-void percent_expand(char token, char *subst, char *src, char *dst, int dst_length);
-void check_access(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info);
-void validate_x509(X509 *x509, char *cacerts_dir, struct pam_openssh_x509_info *x509_info);
-void extract_ssh_key(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info);
 #endif
+

@@ -15,25 +15,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdarg.h>
+#include "pam_openssh_x509_util.h"
+
 #include <syslog.h>
 #include <ldap.h>
+#include <errno.h>
+#include <stdbool.h>
 
-#include "pam_openssh_x509.h"
+struct __config_lookup_table {
+    char *name;
+    int value;
+};
 
-#define DEFAULT_LOG_FACILITY LOG_LOCAL1
-#define LOG_BUFFER_SIZE 2048
-#define GROUP_DN_BUFFER_SIZE 1024
-
-#define PUT_32BIT(cp, value)( \
-    (cp)[0] = (unsigned char)((value) >> 24), \
-    (cp)[1] = (unsigned char)((value) >> 16), \
-    (cp)[2] = (unsigned char)((value) >> 8), \
-    (cp)[3] = (unsigned char)(value) )
-
-static long int log_facility = DEFAULT_LOG_FACILITY;
-
-/* define config lookup table */
 static struct __config_lookup_table syslog_facilities[] =
     {
         { "LOG_KERN", LOG_KERN },
@@ -55,7 +48,7 @@ static struct __config_lookup_table syslog_facilities[] =
         { "LOG_LOCAL4", LOG_LOCAL4 },
         { "LOG_LOCAL5", LOG_LOCAL5 },
         { "LOG_LOCAL6", LOG_LOCAL6 },
-        { "LOG_LOCAL7", LOG_LOCAL6 },
+        { "LOG_LOCAL7", LOG_LOCAL7 },
         /* mark end */
         { NULL, 0 }
     };
@@ -94,6 +87,8 @@ config_lookup(const enum __sections sec, const char *key)
     }
     return -EINVAL;
 }
+
+static long int log_facility = DEFAULT_LOG_FACILITY;
 
 static void
 __LOG(char *prefix, const char *fmt, va_list ap)
@@ -242,21 +237,6 @@ percent_expand(char token, char *subst, char *src, char *dst, int dst_length)
         }
         dst[j] = '\0';
     }
-}
-
-void
-release_config(cfg_t *cfg)
-{
-    if (cfg == NULL) {
-        return;
-    }
-    /* free values of each option */
-    cfg_opt_t *opt_ptr;
-    for (opt_ptr = cfg->opts; opt_ptr->name != NULL; opt_ptr++) {
-        cfg_free_value(opt_ptr);
-    }
-    /* free cfg structure */
-    cfg_free(cfg);
 }
 
 void
