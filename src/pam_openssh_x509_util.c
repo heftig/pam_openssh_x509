@@ -22,6 +22,7 @@
 #include <strings.h>
 #include <errno.h>
 #include <string.h>
+#include <stdarg.h>
 #include <stdbool.h>
 
 struct __config_lookup_table {
@@ -79,7 +80,7 @@ config_lookup(const enum __sections sec, const char *key)
 {
     if (sec == SYSLOG || sec == LIBLDAP) {
         if (key != NULL) {
-            struct __config_lookup_table *lookup_ptr;
+            struct __config_lookup_table *lookup_ptr = NULL;
             for (lookup_ptr = _config_lookup[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
                 if (strcasecmp(lookup_ptr->name, key) == 0) {
                     return lookup_ptr->value;

@@ -146,8 +146,8 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
 
                             /* iterate over all requested attributes */
                             char *attr = NULL;
-                            struct berelement *ber = NULL;
-                            for (attr = ldap_first_attribute(ldap_handle, ldap_result, &ber); attr != NULL; attr = ldap_next_attribute(ldap_handle, ldap_result, ber)) {
+                            struct berelement *attributes = NULL;
+                            for (attr = ldap_first_attribute(ldap_handle, ldap_result, &attributes); attr != NULL; attr = ldap_next_attribute(ldap_handle, ldap_result, attributes)) {
                                 bool is_attr_access = strcmp(attr, cfg_getstr(cfg, "ldap_attr_access")) == 0 ? 1 : 0;
                                 bool is_attr_cert = strcmp(attr, cfg_getstr(cfg, "ldap_attr_cert")) == 0 ? 1 : 0;
 
@@ -199,7 +199,7 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
                                 }
                             }
                             /* free attributes structure */
-                            ber_free(ber, 0);
+                            ber_free(attributes, 0);
                             break;
                         }
 
