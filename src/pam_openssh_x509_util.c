@@ -333,6 +333,10 @@ pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
         case EVP_PKEY_RSA:
             {
                 x509_info->ssh_keytype = strdup("ssh-rsa");
+                if (x509_info->ssh_keytype == NULL) {
+                    LOG_CRITICAL("strdup()");
+                    return;
+                }
                 RSA *rsa = EVP_PKEY_get1_RSA(pkey);
                 if (rsa == NULL) {
                     LOG_FAIL("EVP_PKEY_get1_RSA()");

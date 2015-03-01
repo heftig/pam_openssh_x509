@@ -100,9 +100,11 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
     }
 
     /* bind to server */
-    struct berval cred = { strlen(cfg_getstr(cfg, "ldap_pwd")), cfg_getstr(cfg, "ldap_pwd") };
+    char *ldap_pwd = cfg_getstr(cfg, "ldap_pwd");
+    size_t ldap_pwd_length = strlen(ldap_pwd);
+    struct berval cred = { ldap_pwd_length, ldap_pwd };
     rc = ldap_sasl_bind_s(ldap_handle, cfg_getstr(cfg, "ldap_bind_dn"), LDAP_SASL_SIMPLE, &cred, NULL, NULL, NULL);
-    memset(cfg_getstr(cfg, "ldap_pwd"), 0, strlen(cfg_getstr(cfg, "ldap_pwd")));
+    memset(ldap_pwd, 0, ldap_pwd_length);
 
     if (rc == LDAP_SUCCESS) {
         /* connection established */
@@ -139,7 +141,7 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
                             char *user_dn = ldap_get_dn(ldap_handle, ldap_result); 
                             if (user_dn == NULL) {
                                 /* cannot access ldap_handle->ld_errno as structure is opaque */
-                                LOG_CRITICAL("ldap_get_dn(): '%s'", "user_dn == NULL");
+                                LOG_FAIL("ldap_get_dn(): '%s'", "user_dn == NULL");
                             } else {
                                 LOG_MSG("user_dn: %s", user_dn);
                             }
@@ -310,6 +312,18 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     rc = pam_get_user(pamh, &uid, NULL);
     if (rc == PAM_SUCCESS) {
         /*
+         * check for local account
+         *
+         * this is needed because OpenSSH validates local account after running
+         * the pam modules so that the whole pam module chain would run all the
+         * time an invalid user tries to connect
+         */
+        struct passwd *pwd = getpwnam(uid);
+        if (pwd == NULL) {
+            LOG_FATAL("user '%s' has no local account", uid);
+            goto auth_err_and_free_config;
+        }
+        /*
          * make uid available in data transfer object. do not point to value in
          * pam space because if we free our data structure we would free it from
          * global pam space as well. other modules could rely on it
@@ -317,18 +331,6 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         x509_info->uid = strndup(uid, UID_BUFFER_SIZE);
         if (x509_info->uid == NULL) {
             LOG_FATAL("strndup()");
-            goto auth_err_and_free_config;
-        }
-        /*
-         * check for local account
-         *
-         * this is needed because OpenSSH validates local account after running
-         * the pam modules so that the whole pam module chain would run all the
-         * time an invalid user tries to connect
-         */
-        struct passwd *pwd = getpwnam(x509_info->uid);
-        if (pwd == NULL) {
-            LOG_FATAL("user '%s' has no local account", x509_info->uid);
             goto auth_err_and_free_config;
         }
     } else {
@@ -340,20 +342,20 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     char *expanded_path = malloc(AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
     if (expanded_path != NULL) {
         substitute_token('u', x509_info->uid, cfg_getstr(cfg, "authorized_keys_file"), expanded_path, AUTHORIZED_KEYS_FILE_BUFFER_SIZE);
-        x509_info->authorized_keys_file = expanded_path;
     } else {
         LOG_FATAL("malloc() failed");
         goto auth_err_and_free_config;
     }
 
     /* make sure file is readable / writable */
-    FILE *access_test = fopen(x509_info->authorized_keys_file, "a+");
+    FILE *access_test = fopen(expanded_path, "a+");
     if (access_test != NULL) {
         fclose(access_test);
     } else {
-        LOG_FATAL("'%s' is not readable / writable", x509_info->authorized_keys_file);
+        LOG_FATAL("'%s' is not readable / writable", expanded_path);
         goto auth_err_and_free_config;
     }
+    x509_info->authorized_keys_file = expanded_path;
 
     /* query ldap server and retrieve access permission and certificate of user */
     X509 *x509 = NULL;

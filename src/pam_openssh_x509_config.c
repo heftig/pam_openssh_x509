@@ -54,7 +54,8 @@ static int
 cfg_validate_log_facility(cfg_t *cfg, cfg_opt_t *opt)
 {
     const char *log_facility = cfg_opt_getnstr(opt, 0);
-    if (set_log_facility(log_facility) == -EINVAL) {
+    int rc = set_log_facility(log_facility);
+    if (rc == -EINVAL) {
         cfg_error(cfg, "cfg_validate_log_facility(): option: '%s', value: '%s' (value is not a valid syslog facility)", cfg_opt_name(opt), log_facility);
         return -1;
     }
@@ -65,7 +66,8 @@ static int
 cfg_validate_ldap_uri(cfg_t *cfg, cfg_opt_t *opt)
 {
     const char *ldap_uri = cfg_opt_getnstr(opt, 0);
-    if (ldap_is_ldap_url(ldap_uri) == 0) {
+    int rc = ldap_is_ldap_url(ldap_uri);
+    if (rc == 0) {
         cfg_error(cfg, "cfg_validate_ldap_uri(): option: '%s', value: '%s' (value is not an ldap uri)", cfg_opt_name(opt), ldap_uri);
         return -1;
     }
@@ -152,7 +154,7 @@ release_config(cfg_t *cfg)
         return;
     }
     /* free values of each option */
-    cfg_opt_t *opt_ptr;
+    cfg_opt_t *opt_ptr = NULL;
     for (opt_ptr = cfg->opts; opt_ptr->name != NULL; opt_ptr++) {
         cfg_free_value(opt_ptr);
     }
