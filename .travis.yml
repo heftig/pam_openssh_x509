@@ -1,4 +1,9 @@
 language: c
 compiler: gcc
+
+before_script:
+    - sudo apt-get update -qq
+    - sudo apt-get install -y check libconfuse-dev
+
 script: ./configure --libdir=/lib/security --disable-dependency-tracking && make && make check
 
