@@ -1,9 +1,14 @@
 language: c
 compiler: gcc
 
-before_script:
+before_install:
     - sudo apt-get update -qq
-    - sudo apt-get install -y check libconfuse-dev
+
+install:
+    - sudo apt-get install -y libconfuse-dev
+    - wget http://sourceforge.net/projects/check/files/latest/download -O /tmp/check_latest.tar.gz
+    - tar -xvfz /tmp/check_latest.tar.gz
+    - cd check-* && ./configure && make && sudo make install
 
 script: ./configure --libdir=/lib/security --disable-dependency-tracking && make && make check
 
