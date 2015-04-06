@@ -6,7 +6,7 @@ before_install:
     - sudo apt-get update -qq
 
 install:
-    - sudo apt-get install -y libconfuse-dev
+    - sudo apt-get install -y libconfuse-dev openssl
     - cd ..
     - wget http://sourceforge.net/projects/check/files/latest/download -O check_latest.tar.gz
     - tar xvfz check_latest.tar.gz
