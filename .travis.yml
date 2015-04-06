@@ -1,0 +1,4 @@
+language: c
+compiler: gcc
+script: ./configure --libdir=/lib/security --disable-dependency-tracking && make && make check
+
