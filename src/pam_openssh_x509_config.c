@@ -28,9 +28,13 @@
 static void
 cfg_error_handler(cfg_t *cfg, const char *fmt, va_list ap)
 {
+    if (cfg == NULL || fmt == NULL) {
+        FATAL("cfg_error_handler(): cfg or fmt == NULL");
+    }
+
     char error_msg[ERROR_MSG_BUFFER_SIZE];
     vsnprintf(error_msg, sizeof(error_msg), fmt, ap);
-    LOG_FATAL("%s", error_msg);
+    FATAL("%s", error_msg);
 }
 
 /*
@@ -40,6 +44,10 @@ cfg_error_handler(cfg_t *cfg, const char *fmt, va_list ap)
 static int
 cfg_str_to_int_parser_libldap(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
+    if (cfg == NULL || opt == NULL || value == NULL || result == NULL) {
+        FATAL("cfg_str_to_int_parser_libldap(): cfg, opt, value or result == NULL");
+    }
+
     long int result_value = config_lookup(LIBLDAP, value);
     if (result_value == -EINVAL) {
         cfg_error(cfg, "cfg_value_parser_int(): option: '%s', value: '%s'", cfg_opt_name(opt), value);
@@ -53,6 +61,10 @@ cfg_str_to_int_parser_libldap(cfg_t *cfg, cfg_opt_t *opt, const char *value, voi
 static int
 cfg_validate_log_facility(cfg_t *cfg, cfg_opt_t *opt)
 {
+    if (cfg == NULL || opt == NULL) {
+        FATAL("cfg_validate_log_facility(): cfg or opt == NULL");
+    }
+
     const char *log_facility = cfg_opt_getnstr(opt, 0);
     int rc = set_log_facility(log_facility);
     if (rc == -EINVAL) {
@@ -65,6 +77,10 @@ cfg_validate_log_facility(cfg_t *cfg, cfg_opt_t *opt)
 static int
 cfg_validate_ldap_uri(cfg_t *cfg, cfg_opt_t *opt)
 {
+    if (cfg == NULL || opt == NULL) {
+        FATAL("cfg_validate_ldap_uri(): cfg or opt == NULL");
+    }
+
     const char *ldap_uri = cfg_opt_getnstr(opt, 0);
     int rc = ldap_is_ldap_url(ldap_uri);
     if (rc == 0) {
@@ -77,6 +93,10 @@ cfg_validate_ldap_uri(cfg_t *cfg, cfg_opt_t *opt)
 static int
 cfg_validate_ldap_search_timeout(cfg_t *cfg, cfg_opt_t *opt)
 {
+    if (cfg == NULL || opt == NULL) {
+        FATAL("cfg_validate_ldap_search_timeout(): cfg or opt == NULL");
+    }
+
     long int timeout = cfg_opt_getnint(opt, 0);
     if (timeout <= 0) {
         cfg_error(cfg, "cfg_validate_ldap_search_timeout(): option: '%s', value: '%li' (value must be > 0)", cfg_opt_name(opt), timeout);
@@ -88,6 +108,10 @@ cfg_validate_ldap_search_timeout(cfg_t *cfg, cfg_opt_t *opt)
 static int
 cfg_validate_cacerts_dir(cfg_t *cfg, cfg_opt_t *opt)
 {
+    if (cfg == NULL || opt == NULL) {
+        FATAL("cfg_validate_cacerts_dir(): cfg or opt == NULL");
+    }
+
     const char *cacerts_dir = cfg_opt_getnstr(opt, 0);
     /* check if directory exists */
     DIR *cacerts_dir_stream = opendir(cacerts_dir);
@@ -100,12 +124,11 @@ cfg_validate_cacerts_dir(cfg_t *cfg, cfg_opt_t *opt)
     return 0;
 }
 
-int
+void
 init_and_parse_config(cfg_t **cfg, const char *cfg_file)
 {
-    if ((cfg == NULL) || (cfg_file == NULL)) {
-        LOG_FATAL("init_and_parse_config(): cfg_file or cfg is NULL");
-        return -1;
+    if (cfg == NULL || cfg_file == NULL) {
+        FATAL("init_and_parse_config(): cfg or cfg_file == NULL");
     }
 
     /* setup config options */
@@ -138,21 +161,18 @@ init_and_parse_config(cfg_t **cfg, const char *cfg_file)
 
     /* parse config */
     int rc = cfg_parse(*cfg, cfg_file);
-    switch (rc) {
-        case CFG_SUCCESS:
-            return 0;
-        case CFG_FILE_ERROR:
-            cfg_error(*cfg, "cfg_parse(): file: '%s', '%s'", cfg_file, strerror(errno));
+    if (rc == CFG_FILE_ERROR) {
+        cfg_error(*cfg, "cfg_parse(): file: '%s', '%s'", cfg_file, strerror(errno));
     }
-    return -1;
 }
 
 void
 release_config(cfg_t *cfg)
 {
     if (cfg == NULL) {
-        return;
+        FATAL("release_config(): cfg == NULL");
     }
+
     /* free values of each option */
     cfg_opt_t *opt_ptr = NULL;
     for (opt_ptr = cfg->opts; opt_ptr->name != NULL; opt_ptr++) {

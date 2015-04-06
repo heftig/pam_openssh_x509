@@ -78,13 +78,15 @@ static struct __config_lookup_table *_config_lookup[] = { syslog_facilities, lib
 long int
 config_lookup(const enum __sections sec, const char *key)
 {
+    if (key == NULL) {
+        FATAL("config_lookup(): key == NULL");
+    };
+
     if (sec == SYSLOG || sec == LIBLDAP) {
-        if (key != NULL) {
-            struct __config_lookup_table *lookup_ptr = NULL;
-            for (lookup_ptr = _config_lookup[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
-                if (strcasecmp(lookup_ptr->name, key) == 0) {
-                    return lookup_ptr->value;
-                }
+        struct __config_lookup_table *lookup_ptr = NULL;
+        for (lookup_ptr = _config_lookup[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
+            if (strcasecmp(lookup_ptr->name, key) == 0) {
+                return lookup_ptr->value;
             }
         }
     }
@@ -102,6 +104,15 @@ __LOG(char *prefix, const char *fmt, va_list ap)
 }
 
 void
+LOG_MSG(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    __LOG("[#]", fmt, ap);
+    va_end(ap);
+}
+
+void
 LOG_SUCCESS(const char *fmt, ...)
 {
     va_list ap;
@@ -111,16 +122,7 @@ LOG_SUCCESS(const char *fmt, ...)
 }
 
 void
-LOG_FATAL(const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    __LOG("[!]", fmt, ap);
-    va_end(ap);
-}
-
-void
-LOG_CRITICAL(const char *fmt, ...)
+LOG_FAIL(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -129,32 +131,51 @@ LOG_CRITICAL(const char *fmt, ...)
 }
 
 void
-LOG_FAIL(const char *fmt, ...)
+FATAL(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    __LOG("[~]", fmt, ap);
+    __LOG("[!]", fmt, ap);
     va_end(ap);
-}
-
-void
-LOG_MSG(const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    __LOG("[#]", fmt, ap);
-    va_end(ap);
+    exit(EXIT_FAILURE);
 }
 
 int
 set_log_facility(const char *lf_in)
 {
+    if (lf_in == NULL) {
+        FATAL("set_log_facility(): lf_in == NULL");
+    }
+
     long int value = config_lookup(SYSLOG, lf_in);
     if (value != -EINVAL) {
         log_facility = value;
         return 0;
     }
     return -EINVAL;
+}
+
+int
+is_file_readable(const char *file)
+{
+    if (file == NULL) {
+        FATAL("is_file_readable(): file == NULL");
+    }
+
+    struct stat stat_buffer;
+
+    int rc = stat(file, &stat_buffer);
+    if (rc == 0) {
+        /* check if we have a file */
+        if (S_ISREG(stat_buffer.st_mode)) {
+            /* check if readable */
+            rc = access(file, R_OK);
+            if (rc == 0) {
+                return 0;
+            }
+        }
+    }
+    return -1;
 }
 
 static int
@@ -170,25 +191,23 @@ is_msb_set(unsigned char byte)
 void
 init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
 {
-    if (x509_info != NULL) {
-        memset(x509_info, 0, sizeof(*x509_info));
-
-        x509_info->uid = NULL;
-        x509_info->authorized_keys_file = NULL;
-        x509_info->ssh_keytype = NULL;
-        x509_info->ssh_key = NULL;
-
-        x509_info->has_cert = 0x86;
-        x509_info->has_valid_cert = 0x86;
-        x509_info->serial = NULL;
-        x509_info->issuer = NULL;
-        x509_info->subject = NULL;
-
-        x509_info->directory_online = 0x86;
-        x509_info->has_access = 0x86;
-
-        x509_info->log_facility = NULL;
+    if (x509_info == NULL) {
+        FATAL("init_data_transfer_object(): x509_info == NULL");
     }
+
+    memset(x509_info, 0, sizeof(*x509_info));
+    x509_info->uid = NULL;
+    x509_info->authorized_keys_file = NULL;
+    x509_info->ssh_keytype = NULL;
+    x509_info->ssh_key = NULL;
+    x509_info->has_cert = 0x86;
+    x509_info->has_valid_cert = 0x86;
+    x509_info->serial = NULL;
+    x509_info->issuer = NULL;
+    x509_info->subject = NULL;
+    x509_info->directory_online = 0x86;
+    x509_info->has_access = 0x86;
+    x509_info->log_facility = NULL;
 }
 
 /*
@@ -214,7 +233,11 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
 void
 substitute_token(char token, char *subst, char *src, char *dst, int dst_length)
 {
-    if (subst != NULL && src != NULL && dst != NULL && dst_length > 0) {
+    if (subst == NULL || src == NULL || dst == NULL) {
+        FATAL("substitute_token(): subst, src or dst == NULL");
+    }
+
+    if (dst_length > 0) {
         bool cdt = 0;
         int j = 0;
         size_t strlen_subst = strlen(subst);
@@ -245,23 +268,25 @@ substitute_token(char token, char *subst, char *src, char *dst, int dst_length)
 void
 check_access_permission(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info)
 {
-    if (group_dn != NULL && identifier != NULL && x509_info != NULL) {
-        /*
-         * copy group_dn to char array in order to make sure that
-         * string is mutable as strtok will try to change it
-         */
-        char group_dn_mutable[GROUP_DN_BUFFER_SIZE];
-        strncpy(group_dn_mutable, group_dn, GROUP_DN_BUFFER_SIZE);
+    if (group_dn == NULL || identifier == NULL || x509_info == NULL) {
+        FATAL("check_access_permission(): group_dn, identifier or x509_info == NULL");
+    }
 
-        char *token = strtok(group_dn_mutable, "=");
+    /*
+     * copy group_dn to char array in order to make sure that
+     * string is mutable as strtok will try to change it
+     */
+    char group_dn_mutable[GROUP_DN_BUFFER_SIZE];
+    strncpy(group_dn_mutable, group_dn, GROUP_DN_BUFFER_SIZE);
+
+    char *token = strtok(group_dn_mutable, "=");
+    if (token != NULL) {
+        token = strtok(NULL, ",");
         if (token != NULL) {
-            token = strtok(NULL, ",");
-            if (token != NULL) {
-                /* token now contains rdn value of group only */
-                if (strcmp(token, identifier) == 0) {
-                    x509_info->has_access = 1;
-                    return;
-                }
+            /* token now contains rdn value of group only */
+            if (strcmp(token, identifier) == 0) {
+                x509_info->has_access = 1;
+                return;
             }
         }
     }
@@ -271,36 +296,35 @@ check_access_permission(char *group_dn, char *identifier, struct pam_openssh_x50
 void
 validate_x509(X509 *x509, char *cacerts_dir, struct pam_openssh_x509_info *x509_info)
 {
+    if (x509 == NULL || cacerts_dir == NULL || x509_info == NULL) {
+        FATAL("validate_x509(): x509, cacerts_dir or x509_info == NULL");
+    }
+
     /* add algorithms */
     OpenSSL_add_all_algorithms();
 
     /* create a new x509 store with ca certificates */
     X509_STORE *store = X509_STORE_new();
     if (store == NULL) {
-        LOG_CRITICAL("X509_STORE_new()");
-        goto free_algorithms;
+        FATAL("X509_STORE_new()");
     }
     X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
     if (lookup == NULL) {
-        LOG_CRITICAL("X509_STORE_add_lookup()");
-        goto free_x509_store;
+        FATAL("X509_STORE_add_lookup()");
     }
     int rc = X509_LOOKUP_add_dir(lookup, cacerts_dir, X509_FILETYPE_PEM);
     if (rc == 0) {
-        LOG_CRITICAL("X509_LOOKUP_add_dir()");
-        goto free_x509_store;
+        FATAL("X509_LOOKUP_add_dir()");
     }
 
     /* validate the user certificate against the x509 store */
     X509_STORE_CTX *ctx = X509_STORE_CTX_new();
     if (ctx == NULL) {
-        LOG_CRITICAL("X509_STORE_CTX_new()");
-        goto free_x509_store;
+        FATAL("X509_STORE_CTX_new()");
     }
     rc = X509_STORE_CTX_init(ctx, store, x509, NULL);
     if (rc == 0) {
-        LOG_CRITICAL("X509_STORE_CTX_init()");
-        goto free_x509_store_ctx;
+        FATAL("X509_STORE_CTX_init()");
     }
     rc = X509_verify_cert(ctx);
     if (rc != 1) {
@@ -312,20 +336,17 @@ validate_x509(X509 *x509, char *cacerts_dir, struct pam_openssh_x509_info *x509_
         x509_info->has_valid_cert = 1;
     }
 
-free_x509_store_ctx:
+    /* cleanup structures */
     X509_STORE_CTX_free(ctx);
-free_x509_store:
     X509_STORE_free(store);
-free_algorithms:
     EVP_cleanup();
 }
 
 void
 pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
 {
-    if ((pkey == NULL) || (x509_info == NULL)) {
-        LOG_FATAL("pkey_to_authorized_keys(): pkey or x509_info is NULL");
-        return;
+    if (pkey == NULL || x509_info == NULL) {
+        FATAL("pkey_to_authorized_keys(): pkey or x509_info == NULL");
     }
 
     int pkey_type = EVP_PKEY_type(pkey->type);
@@ -334,13 +355,11 @@ pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
             {
                 x509_info->ssh_keytype = strdup("ssh-rsa");
                 if (x509_info->ssh_keytype == NULL) {
-                    LOG_CRITICAL("strdup()");
-                    return;
+                    FATAL("strdup()");
                 }
                 RSA *rsa = EVP_PKEY_get1_RSA(pkey);
                 if (rsa == NULL) {
-                    LOG_FAIL("EVP_PKEY_get1_RSA()");
-                    break;
+                    FATAL("EVP_PKEY_get1_RSA()");
                 }
 
                 /* create authorized_keys entry */
@@ -400,16 +419,14 @@ pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
                 /* create base64 bio */
                 BIO *bio_base64 = BIO_new(BIO_f_base64());
                 if (bio_base64 == NULL) {
-                    LOG_FAIL("BIO_new()");
-                    goto free_rsa;
+                    FATAL("BIO_new()");
                 }
                 BIO_set_flags(bio_base64, BIO_FLAGS_BASE64_NO_NL);
 
                 /* create memory bio */
                 BIO *bio_mem = BIO_new(BIO_s_mem());
                 if (bio_mem == NULL) {
-                    LOG_FAIL("BIO_new()");
-                    goto free_bio_rsa;
+                    FATAL("BIO_new()");
                 }
                 /* create bio chain base64->mem */
                 bio_base64 = BIO_push(bio_base64, bio_mem);
@@ -425,11 +442,9 @@ pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
                     x509_info->ssh_key[data_out] = '\0';
                 }
 
-                /* clear structures */
-                free_bio_rsa:
-                    BIO_free_all(bio_base64);
-                free_rsa:
-                    RSA_free(rsa);
+                /* cleanup structures */
+                BIO_free_all(bio_base64);
+                RSA_free(rsa);
 
                 break;
             }

@@ -16,6 +16,7 @@
  */
 
 #include <check.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
@@ -48,9 +49,6 @@ static struct test_substitute_token _test_substitute_token_lt[] =
         { 'u', "foo", "/home/%u/", 0, "1.FC KOELN" },
         { 'u', "foo", "/home/%u/", 1, "" },
         { 'u', "foo", "/home/%u/", 2, "/" },
-        { 'u', NULL, NULL, -1, "1.FC KOELN" },
-        { 'u', NULL, NULL, 1024, "1.FC KOELN" },
-        { 'u', "foo", NULL, 1024, "1.FC KOELN" },
     };
 
 static struct test_check_access_permission _test_check_access_permission_lt[] =
@@ -65,9 +63,6 @@ static struct test_check_access_permission _test_check_access_permission_lt[] =
         { " ", "", 0 },
         { " ", " ", 0 },
         { "=a,", "a", 0 },
-        { NULL, NULL, 0 },
-        { NULL, "a", 0 },
-        { "cn=blub,dc=abc", NULL, 0 },
     };
 
 static struct test_validate_x509 _test_validate_x509_lt[] =
@@ -76,6 +71,38 @@ static struct test_validate_x509 _test_validate_x509_lt[] =
         { "trusted_ca_but_expired.pem", 0 },
         { "trusted_and_not_expired.pem", 1 },
     };
+
+START_TEST
+(test_substitute_token_exit_subst_NULL)
+{
+    int dst_length = 1024;
+    char dst[dst_length];
+    substitute_token('u', NULL, "/home/%u/", dst, dst_length);
+}
+END_TEST
+
+START_TEST
+(test_substitute_token_exit_src_NULL)
+{
+    int dst_length = 1024;
+    char dst[dst_length];
+    substitute_token('u', "foo", NULL, dst, dst_length);
+}
+END_TEST
+
+START_TEST
+(test_substitute_token_exit_dst_NULL)
+{
+    substitute_token('u', "foo", "/home/%u/", NULL, 1024);
+}
+END_TEST
+
+START_TEST
+(test_substitute_token_exit_subst_src_dst_NULL)
+{
+    substitute_token('u', NULL, NULL, NULL, 1024);
+}
+END_TEST
 
 START_TEST
 (test_substitute_token)
@@ -90,6 +117,31 @@ START_TEST
     strcpy(dst, "1.FC KOELN");
     substitute_token(token, subst, src, dst, dst_length); 
     ck_assert_str_eq(dst, exp_result);
+}
+END_TEST
+
+START_TEST
+(test_pkey_to_authorized_keys_exit_pkey_NULL)
+{
+    struct pam_openssh_x509_info x509_info;
+
+    pkey_to_authorized_keys(NULL, &x509_info);
+}
+END_TEST
+
+START_TEST
+(test_pkey_to_authorized_keys_exit_x509_info_NULL)
+{
+    EVP_PKEY pkey;
+
+    pkey_to_authorized_keys(&pkey, NULL);
+}
+END_TEST
+
+START_TEST
+(test_pkey_to_authorized_keys_exit_pkey_x509_info_NULL)
+{
+    pkey_to_authorized_keys(NULL, NULL);
 }
 END_TEST
 
@@ -140,34 +192,9 @@ START_TEST
 END_TEST
 
 START_TEST
-(test_pkey_to_authorized_keys_params)
+(test_config_lookup_exit_key_NULL)
 {
-    struct pam_openssh_x509_info x509_info;
-    init_data_transfer_object(&x509_info);
-    pkey_to_authorized_keys(NULL, NULL);
-    pkey_to_authorized_keys(NULL, &x509_info);
-    ck_assert_ptr_eq(NULL, x509_info.ssh_keytype);
-    ck_assert_ptr_eq(NULL, x509_info.ssh_key);
-    EVP_PKEY pkey;
-    pkey_to_authorized_keys(&pkey, NULL);
-
-    char *pkey_string = "-----BEGIN PUBLIC KEY-----\n"
-                        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1Wv1aHB/coSsamD9Acd7\n"
-                        "EIiLmYQPW9Tbw6XOcfIKfQy7OaFlevYPXE5y9Zh8w/mqsQKjRYhnZn9DCkfJZyhl\n"
-                        "CbXXqmfE3hMUGg90ENWE68SEXcCb3hA/e/Bn01lSBWjcSBhhSXUOvhuLYRFYGAL1\n"
-                        "a3ru1NpWO+XSouaso0XZkCwJzigRA/g0ML7dHya9rR+TA95yU7PrEvtib9GppMeG\n"
-                        "vcDd/JQFkPQkEaGIKsxYkcVGu804ZEMlXKY4QBXFCsTXrJ+aQuzba0WXTd3527uw\n"
-                        "DTGgjYsuw32P//ENlWItuTdxSLqqogxuWYHZ6V7Z+9l3BdNhIzSeyXgPpefECtII\n"
-                        "WwIDAQAB\n"
-                        "-----END PUBLIC KEY-----";
-    BIO *pkey_mem_bio = BIO_new_mem_buf(pkey_string, -1);
-    EVP_PKEY *pkey_static = PEM_read_bio_PUBKEY(pkey_mem_bio, NULL, NULL, NULL);
-    if (pkey_static != NULL) {
-        pkey_to_authorized_keys(pkey_static, NULL);
-    } else {
-        ck_abort_msg("PEM_read_bio_PUBKEY() failed");
-    }
-    BIO_free(pkey_mem_bio);
+    config_lookup(SYSLOG, NULL);
 }
 END_TEST
 
@@ -176,18 +203,23 @@ START_TEST
 {
     int rc = config_lookup(10, "foo");
     ck_assert_int_eq(rc, -EINVAL);
-    rc = config_lookup(10, NULL);
-    ck_assert_int_eq(rc, -EINVAL);
     rc = config_lookup(10, "LOG_FTP");
     ck_assert_int_eq(rc, -EINVAL);
     rc = config_lookup(SYSLOG, "foo");
     ck_assert_int_eq(rc, -EINVAL);
     rc = config_lookup(SYSLOG, "LOG_FTP");
     ck_assert_int_eq(rc, LOG_FTP);
-    rc = config_lookup(SYSLOG, NULL);
+    rc = config_lookup(LIBLDAP, "foo");
     ck_assert_int_eq(rc, -EINVAL);
-    rc = config_lookup(LIBLDAP, NULL);
-    ck_assert_int_eq(rc, -EINVAL);
+    rc = config_lookup(LIBLDAP, "LDAP_SCOPE_BASE");
+    ck_assert_int_eq(rc, LDAP_SCOPE_BASE);
+}
+END_TEST
+
+START_TEST
+(test_set_log_facility_exit_lf_in_NULL)
+{
+    set_log_facility(NULL);
 }
 END_TEST
 
@@ -198,8 +230,43 @@ START_TEST
     ck_assert_int_eq(rc, 0);
     rc = set_log_facility("LOG_KERNEL");
     ck_assert_int_eq(rc, -EINVAL);
-    rc = set_log_facility(NULL);
-    ck_assert_int_eq(rc, -EINVAL);
+}
+END_TEST
+
+START_TEST
+(test_init_data_transfer_object_exit_x509_info_NULL)
+{
+    init_data_transfer_object(NULL);
+}
+END_TEST
+
+START_TEST
+(test_check_access_permission_exit_group_dn_NULL)
+{
+    struct pam_openssh_x509_info x509_info;
+    check_access_permission(NULL, "blub", &x509_info);
+}
+END_TEST
+
+START_TEST
+(test_check_access_permission_exit_identifier_NULL)
+{
+    struct pam_openssh_x509_info x509_info;
+    check_access_permission("cn=blub,dc=abc", NULL, &x509_info);
+}
+END_TEST
+
+START_TEST
+(test_check_access_permission_exit_x509_info_NULL)
+{
+    check_access_permission("cn=blub,dc=abc", "blub", NULL);
+}
+END_TEST
+
+START_TEST
+(test_check_access_permission_exit_group_dn_identifier_x509_info_NULL)
+{
+    check_access_permission(NULL, NULL, NULL);
 }
 END_TEST
 
@@ -214,6 +281,43 @@ START_TEST
     x509_info.has_access = -1;
     check_access_permission(group_dn, identifier, &x509_info);
     ck_assert_int_eq(x509_info.has_access, exp_result);
+}
+END_TEST
+
+START_TEST
+(test_validate_x509_exit_x509_NULL)
+{
+    char *x509_certs_dir = X509CERTSDIR;
+    struct pam_openssh_x509_info x509_info;
+
+    validate_x509(NULL, x509_certs_dir, &x509_info);
+}
+END_TEST
+
+START_TEST
+(test_validate_x509_exit_cacerts_dir_NULL)
+{
+    X509 x509;
+    struct pam_openssh_x509_info x509_info;
+
+    validate_x509(&x509, NULL, &x509_info);
+}
+END_TEST
+
+START_TEST
+(test_validate_x509_exit_x509_info_NULL)
+{
+    X509 x509;
+    char *x509_certs_dir = X509CERTSDIR;
+
+    validate_x509(&x509, x509_certs_dir, NULL);
+}
+END_TEST
+
+START_TEST
+(test_validate_x509_exit_x509_cacerts_dir_x509_info_NULL)
+{
+    validate_x509(NULL, NULL, NULL);
 }
 END_TEST
 
@@ -265,18 +369,40 @@ make_util_suite(void)
     suite_add_tcase(s, tc_x509);
 
     /* helper test cases */
+    tcase_add_exit_test(tc_helper, test_substitute_token_exit_subst_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_helper, test_substitute_token_exit_src_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_helper, test_substitute_token_exit_dst_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_helper, test_substitute_token_exit_subst_src_dst_NULL, EXIT_FAILURE);
     int length_pe_lt = sizeof(_test_substitute_token_lt) / sizeof(struct test_substitute_token);
     tcase_add_loop_test(tc_helper, test_substitute_token, 0, length_pe_lt);
+
+    tcase_add_exit_test(tc_helper, test_config_lookup_exit_key_NULL, EXIT_FAILURE);
     tcase_add_test(tc_helper, test_config_lookup);
+
+    tcase_add_exit_test(tc_helper, test_set_log_facility_exit_lf_in_NULL, EXIT_FAILURE);
     tcase_add_test(tc_helper, test_set_log_facility);
+
+    tcase_add_exit_test(tc_helper, test_init_data_transfer_object_exit_x509_info_NULL, EXIT_FAILURE);
+
+    tcase_add_exit_test(tc_helper, test_check_access_permission_exit_group_dn_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_helper, test_check_access_permission_exit_identifier_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_helper, test_check_access_permission_exit_x509_info_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_helper, test_check_access_permission_exit_group_dn_identifier_x509_info_NULL, EXIT_FAILURE);
     int length_ca_lt = sizeof(_test_check_access_permission_lt) / sizeof(struct test_check_access_permission);
     tcase_add_loop_test(tc_helper, test_check_access_permission, 0, length_ca_lt);
 
     /* ssh test cases */
+    tcase_add_exit_test(tc_ssh, test_pkey_to_authorized_keys_exit_pkey_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_ssh, test_pkey_to_authorized_keys_exit_x509_info_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_ssh, test_pkey_to_authorized_keys_exit_pkey_x509_info_NULL, EXIT_FAILURE);
+
     tcase_add_test(tc_ssh, test_pkey_to_authorized_keys);
-    tcase_add_test(tc_ssh, test_pkey_to_authorized_keys_params);
 
     /* x509 test cases */
+    tcase_add_exit_test(tc_x509, test_validate_x509_exit_x509_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_x509, test_validate_x509_exit_cacerts_dir_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_x509, test_validate_x509_exit_x509_info_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_x509, test_validate_x509_exit_x509_cacerts_dir_x509_info_NULL, EXIT_FAILURE);
     int length_validate_x509 = sizeof(_test_validate_x509_lt) / sizeof(struct test_validate_x509);
     tcase_add_loop_test(tc_x509, test_validate_x509, 0, length_validate_x509);
 

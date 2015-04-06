@@ -25,7 +25,7 @@
 /* type declarations */
 
 /* function declarations */
-int init_and_parse_config(cfg_t **cfg, const char *cfg_file);
+void init_and_parse_config(cfg_t **cfg, const char *cfg_file);
 void release_config(cfg_t *cfg);
 #endif
 

@@ -81,14 +81,10 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         log_char("has_access", x509_info->has_access);
         LOG_MSG("===================================================");
     } else {
-        LOG_FATAL("pam_get_data()");
-        goto auth_err;
+        FATAL("pam_get_data()");
     }
 
     return PAM_SUCCESS;
-
-auth_err:
-    return PAM_AUTH_ERR;
 }
 
 PAM_EXTERN int

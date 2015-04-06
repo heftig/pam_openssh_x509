@@ -18,6 +18,8 @@
 #ifndef PAM_OPENSSH_X509_UTIL_H
 #define PAM_OPENSSH_X509_UTIL_H
 
+#include <unistd.h>
+#include <sys/stat.h>
 #include <openssl/x509.h>
 
 #include "pam_openssh_x509.h"
@@ -36,6 +38,7 @@
 enum __sections { SYSLOG, LIBLDAP };
 
 /* function declarations */
+int is_file_readable(const char *file);
 long int config_lookup(const enum __sections sec, const char *key);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
 void substitute_token(char token, char *subst, char *src, char *dst, int dst_length);

@@ -18,6 +18,8 @@
 #ifndef PAM_OPENSSH_X509_H
 #define PAM_OPENSSH_X509_H
 
+#include <stdlib.h>
+
 /* type declarations */
 struct pam_openssh_x509_info {
     char *uid;
@@ -38,11 +40,10 @@ struct pam_openssh_x509_info {
 };
 
 /* function declarations */
-void LOG_SUCCESS(const char *fmt, ...);
-void LOG_FATAL(const char *fmt, ...);
-void LOG_CRITICAL(const char *fmt, ...);
-void LOG_FAIL(const char *fmt, ...);
 void LOG_MSG(const char *fmt, ...);
+void LOG_SUCCESS(const char *fmt, ...);
+void LOG_FAIL(const char *fmt, ...);
+void FATAL(const char *fmt, ...);
 int set_log_facility(const char *log_facility);
 #endif
 

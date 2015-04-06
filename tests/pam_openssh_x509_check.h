@@ -40,11 +40,6 @@ struct test_validate_x509 {
     char exp_result;
 };
 
-struct test_init_and_parse_config {
-    char *file;
-    int exp_result;
-};
-
 /* function declarations */
 Suite *make_base_suite(void);
 Suite *make_config_suite(void);

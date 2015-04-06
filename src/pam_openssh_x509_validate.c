@@ -47,8 +47,8 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         /* only modify authorized_keys file if LDAP server could be queried */
         if (x509_info->directory_online == 1) {
             if (authorized(x509_info)) {
-                LOG_MSG("Access granted!");
-                LOG_MSG("Synchronizing keys");
+                LOG_MSG("access granted!");
+                LOG_MSG("synchronizing keys");
                 if (x509_info->ssh_keytype != NULL && x509_info->ssh_key != NULL) {
                     /* write key to authorized_keys file */
                     FILE *fd_auth_keys = fopen(x509_info->authorized_keys_file, "w");
@@ -59,32 +59,27 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
                         fwrite("\n", 1, 1, fd_auth_keys);
                         fclose(fd_auth_keys);
                     } else {
-                        /* unlikely */
-                        LOG_FATAL("Cannot open '%s' for writing", x509_info->authorized_keys_file);
-                        goto auth_err;
+                        LOG_FAIL("cannot open '%s' for writing", x509_info->authorized_keys_file);
                     }
                 } else {
-                    LOG_FATAL("Cannot synchronize keys. Either key or keytype not known");
-                    goto auth_err;
+                    LOG_FAIL("cannot synchronize keys. either key or keytype not known");
                 }
             } else {
-                LOG_MSG("Access denied!");
-                LOG_MSG("Truncating authorized_keys file (%s)", x509_info->authorized_keys_file);
+                LOG_MSG("access denied!");
+                LOG_MSG("truncating authorized_keys file (%s)", x509_info->authorized_keys_file);
                 FILE *fd_auth_keys = fopen(x509_info->authorized_keys_file, "w");
                 if (fd_auth_keys != NULL) {
                     fclose(fd_auth_keys);
                 } else {
-                    /* unlikely */
-                    LOG_FATAL("Truncation of '%s' failed", x509_info->authorized_keys_file);
+                    LOG_FAIL("truncation of '%s' failed", x509_info->authorized_keys_file);
                     goto auth_err;
                 }
             }
         } else {
-            LOG_MSG("LDAP server not accessible. Not changing anything");
+            LOG_MSG("ldap server not accessible. not changing anything");
         }
     } else {
-        LOG_FATAL("pam_get_data()");
-        goto auth_err;
+        FATAL("pam_get_data()");
     }
 
     return PAM_SUCCESS;
