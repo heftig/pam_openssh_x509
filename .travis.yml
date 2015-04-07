@@ -4,7 +4,7 @@ compiler: gcc
 before_install:
     - repo=$(pwd)
     - sudo apt-get update -qq
-    - sudo apt-get remove openssl
+    - sudo apt-get remove libssl-dev
 
 install:
     - sudo apt-get install -y libconfuse-dev
