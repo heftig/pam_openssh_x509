@@ -15,7 +15,7 @@ install:
     - wget https://www.openssl.org/source/openssl-1.0.2a.tar.gz
     - tar xvfz openssl-1.0.2a.tar.gz
     - cd openssl-1.0.2a
-    - ./config shared && make && sudo make install
+    - ./config --prefix=/usr shared && make && sudo make install
     - cd ${repo}
 
 script: ./configure --libdir=/lib/security --disable-dependency-tracking && make && make check
