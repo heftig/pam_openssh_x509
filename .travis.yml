@@ -6,9 +6,9 @@ before_install:
     - sudo apt-get update -qq
 
 install:
-    - sudo apt-get install -y libconfuse-dev libssl-dev
+    - sudo apt-get install -y libconfuse-dev
     - cd ..
-    - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download
+    - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download -O check-0.9.10.tar.gz
     - tar xvfz check-0.9.10.tar.gz
     - cd check-0.9.10 && ./configure && make && sudo make install
     - wget https://www.openssl.org/source/openssl-1.0.2a.tar.gz
