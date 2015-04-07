@@ -8,9 +8,13 @@ before_install:
 install:
     - sudo apt-get install -y libconfuse-dev libssl-dev
     - cd ..
-    - wget http://sourceforge.net/projects/check/files/latest/download -O check_latest.tar.gz
-    - tar xvfz check_latest.tar.gz
-    - cd check-* && ./configure && make && sudo make install
+    - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download
+    - tar xvfz check-0.9.10.tar.gz
+    - cd check-0.9.10 && ./configure && make && sudo make install
+    - wget https://www.openssl.org/source/openssl-1.0.2a.tar.gz
+    - tar xvfz openssl-1.0.2a.tar.gz
+    - cd openssl-1.0.2a
+    - ./config && make && sudo make install
     - cd ${repo}
 
 script: ./configure --libdir=/lib/security --disable-dependency-tracking && make && make check
