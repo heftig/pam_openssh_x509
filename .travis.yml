@@ -17,6 +17,8 @@ install:
     - cd openssl-1.0.2a
     - ./config --prefix=/usr shared && make && sudo make install
     - cd ${repo}
+    - cat /usr/lib/pkgconfig/libcrypto.pc
+    - pkg-config --modversion libcrypto
 
 script: ./configure --libdir=/lib/security --disable-dependency-tracking && make && make check
 
