@@ -11,10 +11,11 @@ install:
     - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download -O check-0.9.10.tar.gz
     - tar xvfz check-0.9.10.tar.gz
     - cd check-0.9.10 && ./configure && make && sudo make install
+    - cd ..
     - wget https://www.openssl.org/source/openssl-1.0.2a.tar.gz
     - tar xvfz openssl-1.0.2a.tar.gz
     - cd openssl-1.0.2a
-    - ./config && make && sudo make install
+    - ./config shared && make && sudo make install
     - cd ${repo}
 
 script: ./configure --libdir=/lib/security --disable-dependency-tracking && make && make check
