@@ -7,7 +7,7 @@ before_install:
     - sudo apt-get remove libssl-dev
 
 install:
-    - sudo apt-get install -y libconfuse-dev
+    - sudo apt-get install -y libpam0g libconfuse-dev
     - cd ..
     - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download -O check-0.9.10.tar.gz
     - tar xvfz check-0.9.10.tar.gz
