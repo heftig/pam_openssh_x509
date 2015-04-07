@@ -12840,12 +12840,12 @@ if test -n "$libcheck_CFLAGS"; then
     pkg_cv_libcheck_CFLAGS="$libcheck_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"check >= 0.9.14\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "check >= 0.9.14") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"check >= 0.9.10\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "check >= 0.9.10") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_libcheck_CFLAGS=`$PKG_CONFIG --cflags "check >= 0.9.14" 2>/dev/null`
+  pkg_cv_libcheck_CFLAGS=`$PKG_CONFIG --cflags "check >= 0.9.10" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -12857,12 +12857,12 @@ if test -n "$libcheck_LIBS"; then
     pkg_cv_libcheck_LIBS="$libcheck_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"check >= 0.9.14\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "check >= 0.9.14") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"check >= 0.9.10\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "check >= 0.9.10") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_libcheck_LIBS=`$PKG_CONFIG --libs "check >= 0.9.14" 2>/dev/null`
+  pkg_cv_libcheck_LIBS=`$PKG_CONFIG --libs "check >= 0.9.10" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -12883,18 +12883,18 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        libcheck_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "check >= 0.9.14" 2>&1`
+	        libcheck_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "check >= 0.9.10" 2>&1`
         else
-	        libcheck_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "check >= 0.9.14" 2>&1`
+	        libcheck_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "check >= 0.9.10" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$libcheck_PKG_ERRORS" >&5
 
-	as_fn_error $? "cannot find libcheck (>= 0.9.14)" "$LINENO" 5
+	as_fn_error $? "cannot find libcheck (>= 0.9.10)" "$LINENO" 5
 elif test $pkg_failed = untried; then
      	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	as_fn_error $? "cannot find libcheck (>= 0.9.14)" "$LINENO" 5
+	as_fn_error $? "cannot find libcheck (>= 0.9.10)" "$LINENO" 5
 else
 	libcheck_CFLAGS=$pkg_cv_libcheck_CFLAGS
 	libcheck_LIBS=$pkg_cv_libcheck_LIBS
@@ -13195,6 +13195,10 @@ LIBADD_AUDIT="-lpam ${libconfuse_LIBS} ${libcrypto_LIBS}"
 LIBADD_VALIDATE="-lpam ${libconfuse_LIBS} ${libcrypto_LIBS}"
 
 LDADD_CHECK="-lpam ${libcheck_LIBS} ${libconfuse_LIBS} -lldap -llber ${libcrypto_LIBS}"
+
+
+# set compiler flags
+CFLAGS="-Wall -std=gnu99 -pedantic-errors"
 
 
 # Checks for header files.

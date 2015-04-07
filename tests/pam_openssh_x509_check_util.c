@@ -22,6 +22,7 @@
 #include <openssl/pem.h>
 #include <syslog.h>
 #include <ldap.h>
+#include <string.h>
 
 #include "pam_openssh_x509_check.h"
 #include "../src/pam_openssh_x509_util.h"
@@ -113,9 +114,10 @@ START_TEST
     int dst_length = _test_substitute_token_lt[_i].dst_length;
     char *exp_result = _test_substitute_token_lt[_i].exp_result;
 
-    char dst[dst_length];
-    strcpy(dst, "1.FC KOELN");
-    substitute_token(token, subst, src, dst, dst_length); 
+    int dst_buffer_length = 1024;
+    char dst[dst_buffer_length];
+    strncpy(dst, "1.FC KOELN", dst_buffer_length);
+    substitute_token(token, subst, src, dst, dst_length);
     ck_assert_str_eq(dst, exp_result);
 }
 END_TEST

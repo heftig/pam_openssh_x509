@@ -13,7 +13,7 @@ LT_INIT([disable-static dlopen pic-only])
 AC_PROG_CC
 
 # Checks for libraries.
-PKG_CHECK_MODULES([libcheck], [check >= 0.9.14], [], [AC_MSG_ERROR([cannot find libcheck (>= 0.9.14)])])
+PKG_CHECK_MODULES([libcheck], [check >= 0.9.10], [], [AC_MSG_ERROR([cannot find libcheck (>= 0.9.10)])])
 PKG_CHECK_MODULES([libconfuse], [libconfuse >= 2.7], [], [AC_MSG_ERROR([cannot find libconfuse (>= 2.7)])])
 PKG_CHECK_MODULES([libcrypto], [libcrypto >= 1.0.1j], [], [AC_MSG_ERROR([cannot find libcrypto (>= 1.0.1j)])])
 AC_CHECK_LIB([ldap], [ldap_sasl_bind_s], [], [AC_MSG_ERROR([cannot find libldap])])
@@ -25,6 +25,9 @@ AC_SUBST([LIBADD_BASE], ["-lpam ${libconfuse_LIBS} -lldap -llber ${libcrypto_LIB
 AC_SUBST([LIBADD_AUDIT], ["-lpam ${libconfuse_LIBS} ${libcrypto_LIBS}"])
 AC_SUBST([LIBADD_VALIDATE], ["-lpam ${libconfuse_LIBS} ${libcrypto_LIBS}"])
 AC_SUBST([LDADD_CHECK], ["-lpam ${libcheck_LIBS} ${libconfuse_LIBS} -lldap -llber ${libcrypto_LIBS}"])
+
+# set compiler flags
+AC_SUBST([CFLAGS], ["-Wall -std=gnu99 -pedantic-errors"])
 
 # Checks for header files.
 
