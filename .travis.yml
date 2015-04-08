@@ -7,19 +7,18 @@ before_install:
     - sudo apt-get remove libssl-dev
 
 install:
-    - sudo apt-get install -y libpam0g libconfuse-dev
-    - cd ..
-    - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download -O check-0.9.10.tar.gz
-    - tar xvfz check-0.9.10.tar.gz
-    - cd check-0.9.10 && ./configure && make && sudo make install
-    - cd ..
-    - wget --no-check-certificate https://www.openssl.org/source/openssl-1.0.2a.tar.gz
-    - tar xvfz openssl-1.0.2a.tar.gz
-    - cd openssl-1.0.2a
-    - ./config --prefix=/usr shared && make && sudo make install
-    - cd ${repo}
-    - cat /usr/lib/pkgconfig/libcrypto.pc
-    - pkg-config --modversion libcrypto
+    - sudo apt-get install -y libconfuse-dev
+#    - cd ..
+#    - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download -O check-0.9.10.tar.gz
+#    - tar xvfz check-0.9.10.tar.gz
+#    - cd check-0.9.10 && ./configure && make && sudo make install
+#    - cd ..
+#    - wget --no-check-certificate https://www.openssl.org/source/openssl-1.0.2a.tar.gz
+#    - tar xvfz openssl-1.0.2a.tar.gz
+#    - cd openssl-1.0.2a
+#    - ./config --prefix=/usr shared && make && sudo make install
+#    - cd ${repo}
+    - sudo ldconfig -p
 
 script: ./configure --libdir=/lib/security --disable-dependency-tracking && make && make check
 
