@@ -25,5 +25,5 @@ script:
     - make check
 
 after_failure:
-    - cat tests/test-suite.log
+    - ./tests/pam_openssh_x509_check
 
