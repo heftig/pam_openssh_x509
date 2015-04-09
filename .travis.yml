@@ -7,7 +7,7 @@ before_install:
     - sudo apt-get remove libssl-dev
 
 install:
-    - sudo ln -s /lib/x86_64-linux-gnu/libpam.so.0 lib/x86_64-linux-gnu/libpam.so
+    - sudo ln -s /lib/x86_64-linux-gnu/libpam.so.0 /lib/x86_64-linux-gnu/libpam.so
     - ld -lpam -verbose
     - sudo apt-get install -y libconfuse-dev
     - cd ..
