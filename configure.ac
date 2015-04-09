@@ -1,5 +1,5 @@
 # Prelude.
-AC_PREREQ([2.69])
+AC_PREREQ([2.68])
 AC_INIT([pam_openssh_x509], [0.1], [seroland86@gmail.com], [], [https://github.com/flix-/pam_openssh_x509])
 AC_LANG([C])
 AC_CONFIG_SRCDIR([src/pam_openssh_x509.h])
