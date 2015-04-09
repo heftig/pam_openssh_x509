@@ -18,7 +18,7 @@ install:
 
 before_script:
     - ./bootstrap
-    - sudo mkdir -p /usr/local/etc/ssh/cacerts
+    - mkdir -p /usr/local/etc/ssh/cacerts
 
 script:
     - ./configure --libdir=/lib/security --disable-dependency-tracking
