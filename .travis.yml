@@ -25,5 +25,6 @@ script:
     - make check
 
 after_failure:
-    - ./tests/pam_openssh_x509_check
+    - cd tests
+    - ./pam_openssh_x509_check
 
