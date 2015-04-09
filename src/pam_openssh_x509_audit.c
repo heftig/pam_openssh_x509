@@ -44,7 +44,7 @@ log_char(char *attr, char value)
         return;
     }
     char *value_string = NULL;
-    if (value == 0x86) {
+    if (value == 0x56) {
         value_string = unset;
     } else if (value == 1) {
         value_string = "true";

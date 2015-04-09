@@ -200,13 +200,13 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
     x509_info->authorized_keys_file = NULL;
     x509_info->ssh_keytype = NULL;
     x509_info->ssh_key = NULL;
-    x509_info->has_cert = 0x86;
-    x509_info->has_valid_cert = 0x86;
+    x509_info->has_cert = 0x56;
+    x509_info->has_valid_cert = 0x56;
     x509_info->serial = NULL;
     x509_info->issuer = NULL;
     x509_info->subject = NULL;
-    x509_info->directory_online = 0x86;
-    x509_info->has_access = 0x86;
+    x509_info->directory_online = 0x56;
+    x509_info->has_access = 0x56;
     x509_info->log_facility = NULL;
 }
 
