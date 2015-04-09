@@ -1,6 +1,10 @@
 language: c
 compiler: gcc
 
+notifications:
+    email: false
+    irc: "chat.freenode.net#pam_openssh_x509"
+
 before_install:
     - sudo add-apt-repository "deb http://de.archive.ubuntu.com/ubuntu trusty main restricted universe multiverse"
     - sudo apt-get update -qq
@@ -24,8 +28,4 @@ script:
     - ./configure --libdir=/lib/security --disable-dependency-tracking
     - make
     - make check
-
-after_failure:
-    - cd tests
-    - ./pam_openssh_x509_check
 
