@@ -7,7 +7,8 @@ before_install:
     - sudo apt-get remove libssl-dev
 
 install:
-    - dpkg-query -L libpam0g
+    - sudo ln -s /lib/x86_64-linux-gnu/libpam.so.0 lib/x86_64-linux-gnu/libpam.so
+    - ld -lpam -verbose
     - sudo apt-get install -y libconfuse-dev
     - cd ..
     - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download -O check-0.9.10.tar.gz
