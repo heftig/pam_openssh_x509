@@ -4,12 +4,11 @@ compiler: gcc
 before_install:
     - repo=$(pwd)
     - sudo apt-get update -qq
-    - sudo apt-get remove libssl-dev
+    - sudo apt-get remove automake libssl-dev
+    - sudo ln -s /lib/x86_64-linux-gnu/libpam.so.0 /lib/x86_64-linux-gnu/libpam.so
 
 install:
-    - sudo ln -s /lib/x86_64-linux-gnu/libpam.so.0 /lib/x86_64-linux-gnu/libpam.so
-    - ld -lpam -verbose
-    - sudo apt-get install -y libconfuse-dev
+    - sudo apt-get install -y automake libconfuse-dev
     - cd ..
     - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download -O check-0.9.10.tar.gz
     - tar xvfz check-0.9.10.tar.gz
@@ -22,7 +21,4 @@ install:
     - cd ${repo}
 
 script: ./configure --libdir=/lib/security --disable-dependency-tracking && make && make check
-
-after_script: echo "hello world"
-after_failure: cat config.log
 
