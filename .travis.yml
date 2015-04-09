@@ -21,5 +21,6 @@ install:
 
 script: ./configure --libdir=/lib/security --disable-dependency-tracking && make && make check
 
-after_failure: cat config.status
+after_script: echo "hello world"
+after_failure: cat config.log
 
