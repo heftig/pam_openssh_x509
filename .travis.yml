@@ -5,15 +5,11 @@ before_install:
     - sudo add-apt-repository "deb http://de.archive.ubuntu.com/ubuntu trusty main restricted universe multiverse"
     - sudo apt-get update -qq
     - sudo apt-get remove libssl-dev
-    - sudo ln -s /lib/x86_64-linux-gnu/libpam.so.0 /lib/x86_64-linux-gnu/libpam.so
+#    - sudo ln -s /lib/x86_64-linux-gnu/libpam.so.0 /lib/x86_64-linux-gnu/libpam.so
 
 install:
     - repo=$(pwd)
-    - sudo apt-get install -y autotools-dev autoconf automake libtool libconfuse-dev
-    - cd ..
-    - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download -O check-0.9.10.tar.gz
-    - tar xvfz check-0.9.10.tar.gz
-    - cd check-0.9.10 && ./configure && make && sudo make install
+    - sudo apt-get install -y autotools-dev autoconf automake check libtool libconfuse-dev
     - cd ..
     - wget --no-check-certificate https://www.openssl.org/source/openssl-1.0.2a.tar.gz
     - tar xvfz openssl-1.0.2a.tar.gz
