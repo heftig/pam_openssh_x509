@@ -3,14 +3,13 @@ compiler: gcc
 
 before_install:
     - sudo add-apt-repository "deb http://de.archive.ubuntu.com/ubuntu trusty main restricted universe multiverse"
-    - sudo apt-key update
     - sudo apt-get update -qq
     - sudo apt-get remove libssl-dev
     - sudo ln -s /lib/x86_64-linux-gnu/libpam.so.0 /lib/x86_64-linux-gnu/libpam.so
 
 install:
     - repo=$(pwd)
-    - sudo apt-get install -y automake autotools libtool libconfuse-dev
+    - sudo apt-get install -y autotools-dev autoconf automake libtool libconfuse-dev
     - cd ..
     - wget http://sourceforge.net/projects/check/files/check/0.9.10/check-0.9.10.tar.gz/download -O check-0.9.10.tar.gz
     - tar xvfz check-0.9.10.tar.gz
