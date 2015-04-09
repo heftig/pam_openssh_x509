@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <check.h>
+#include <stdio.h>
 
 #include "pam_openssh_x509_check.h"
 
@@ -32,6 +33,7 @@ main(int argc, char **argv)
     int number_failed = srunner_ntests_failed(sr);
     srunner_free(sr);
 
+    printf("%d\n", sizeof(char));
     return(number_failed == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
