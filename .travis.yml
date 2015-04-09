@@ -2,7 +2,8 @@ language: c
 compiler: gcc
 
 before_install:
-    - sudo apt-get install software-properties-common python-software-properties
+    - sudo apt-get install software-properties-common
+    - sudo apt-get update
     - sudo apt-add repository "deb http://de.archive.ubuntu.com/ubuntu trusty main restricted universe multiverse"
     - sudo apt-get update -qq
     - sudo apt-get remove libssl-dev
