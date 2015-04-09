@@ -5,7 +5,7 @@ before_install:
     - sudo add-apt-repository "deb http://de.archive.ubuntu.com/ubuntu trusty main restricted universe multiverse"
     - sudo apt-get update -qq
     - sudo apt-get remove libssl-dev
-#    - sudo ln -s /lib/x86_64-linux-gnu/libpam.so.0 /lib/x86_64-linux-gnu/libpam.so
+    - sudo ln -s /lib/x86_64-linux-gnu/libpam.so.0 /lib/x86_64-linux-gnu/libpam.so
 
 install:
     - repo=$(pwd)
