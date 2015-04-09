@@ -16,6 +16,9 @@ install:
     - ./config --prefix=/usr shared && make && sudo make install
     - cd ${repo}
 
+before_script:
+    - ./bootstrap
+
 script:
     - ./configure --libdir=/lib/security --disable-dependency-tracking
     - make
