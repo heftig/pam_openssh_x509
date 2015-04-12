@@ -26,21 +26,21 @@
 
 static char *_test_init_and_parse_config_exit_lt[] =
 {
-    "cfg_str_to_int_parser_libldap_ldap_scope_negative_0.conf",
-    "cfg_str_to_int_parser_libldap_ldap_scope_negative_1.conf",
-    "cfg_str_to_int_parser_libldap_ldap_scope_negative_2.conf",
-    "cfg_str_to_int_parser_libldap_ldap_version_negative.conf",
-    "cfg_validate_log_facility_negative.conf",
-    "cfg_validate_ldap_uri_negative.conf",
-    "cfg_validate_ldap_search_timeout_negative.conf",
-    "cfg_validate_cacerts_dir_negative_0.conf",
-    "cfg_validate_cacerts_dir_negative_1.conf",
-    "cfg_validate_cacerts_dir_negative_2.conf",
+    CONFIGSDIR "/cfg_str_to_int_parser_libldap_ldap_scope_negative_0.conf",
+    CONFIGSDIR "/cfg_str_to_int_parser_libldap_ldap_scope_negative_1.conf",
+    CONFIGSDIR "/cfg_str_to_int_parser_libldap_ldap_scope_negative_2.conf",
+    CONFIGSDIR "/cfg_str_to_int_parser_libldap_ldap_version_negative.conf",
+    CONFIGSDIR "/cfg_validate_log_facility_negative.conf",
+    CONFIGSDIR "/cfg_validate_ldap_uri_negative.conf",
+    CONFIGSDIR "/cfg_validate_ldap_search_timeout_negative.conf",
+    CONFIGSDIR "/cfg_validate_cacerts_dir_negative_0.conf",
+    CONFIGSDIR "/cfg_validate_cacerts_dir_negative_1.conf",
+    CONFIGSDIR "/cfg_validate_cacerts_dir_negative_2.conf",
 };
 
 static char *_test_init_and_parse_config_lt[] =
 {
-    "valid.conf",
+    CONFIGSDIR "/valid.conf",
 };
 
 START_TEST
@@ -48,14 +48,12 @@ START_TEST
 {
     char *config_file = _test_init_and_parse_config_exit_lt[_i];
 
-    char *configs_dir = CONFIGSDIR;
-
-    int rc = chdir(configs_dir);
+    int rc = is_file_readable(config_file);
     if (rc == 0) {
         cfg_t *cfg = NULL;
         init_and_parse_config(&cfg, config_file);
     } else {
-        ck_abort_msg("chdir() failed ('%s')", strerror(errno));
+        ck_abort_msg("is_file_readable() failed (%s)", config_file);
     }
 }
 END_TEST
@@ -65,14 +63,12 @@ START_TEST
 {
     char *config_file = _test_init_and_parse_config_lt[_i];
 
-    char *configs_dir = CONFIGSDIR;
-
-    int rc = chdir(configs_dir);
+    int rc = is_file_readable(config_file);
     if (rc == 0) {
         cfg_t *cfg = NULL;
         init_and_parse_config(&cfg, config_file);
     } else {
-        ck_abort_msg("chdir() failed ('%s')", strerror(errno));
+        ck_abort_msg("is_file_readable() failed (%s)", config_file);
     }
 }
 END_TEST

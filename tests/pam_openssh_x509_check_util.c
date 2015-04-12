@@ -68,9 +68,9 @@ static struct test_check_access_permission _test_check_access_permission_lt[] =
 
 static struct test_validate_x509 _test_validate_x509_lt[] =
     {
-        { "not_trusted_ca.pem", 0 },
-        { "trusted_ca_but_expired.pem", 0 },
-        { "trusted_and_not_expired.pem", 1 },
+        { X509CERTSDIR "/not_trusted_ca.pem", 0 },
+        { X509CERTSDIR "/trusted_ca_but_expired.pem", 0 },
+        { X509CERTSDIR "/trusted_and_not_expired.pem", 1 },
     };
 
 START_TEST
@@ -289,10 +289,10 @@ END_TEST
 START_TEST
 (test_validate_x509_exit_x509_NULL)
 {
-    char *x509_certs_dir = X509CERTSDIR;
+    char *ca_certs_dir = CACERTSDIR;
     struct pam_openssh_x509_info x509_info;
 
-    validate_x509(NULL, x509_certs_dir, &x509_info);
+    validate_x509(NULL, ca_certs_dir, &x509_info);
 }
 END_TEST
 
@@ -310,9 +310,9 @@ START_TEST
 (test_validate_x509_exit_x509_info_NULL)
 {
     X509 x509;
-    char *x509_certs_dir = X509CERTSDIR;
+    char *ca_certs_dir = CACERTSDIR;
 
-    validate_x509(&x509, x509_certs_dir, NULL);
+    validate_x509(&x509, ca_certs_dir, NULL);
 }
 END_TEST
 
@@ -326,33 +326,26 @@ END_TEST
 START_TEST
 (test_validate_x509)
 {
-    char *x509_filename = _test_validate_x509_lt[_i].file;
+    char *x509_cert = _test_validate_x509_lt[_i].file;
     char exp_result = _test_validate_x509_lt[_i].exp_result;
 
     struct pam_openssh_x509_info x509_info;
     x509_info.has_valid_cert = -1;
 
-    char *x509_certs_dir = X509CERTSDIR;
+    char *ca_certs_dir = CACERTSDIR;
 
-    int rc = chdir(x509_certs_dir);
-    if (rc == 0) {
-        FILE *x509_file = fopen(x509_filename, "r");
-        if (x509_file != NULL) {
-            X509* x509 = PEM_read_X509(x509_file, NULL, NULL, NULL);
-            if (x509 != NULL) {
-                /* ca_certs_dir relative to x509_certs_dir */
-                char *ca_certs_dir = "../" CACERTSDIR;
-                validate_x509(x509, ca_certs_dir, &x509_info);
-                ck_assert_int_eq(x509_info.has_valid_cert, exp_result);
-            } else {
-                ck_abort_msg("PEM_read_X509() failed");
-            }
-            fclose(x509_file);
+    FILE *x509_cert_file = fopen(x509_cert, "r");
+    if (x509_cert_file != NULL) {
+        X509* x509 = PEM_read_X509(x509_cert_file, NULL, NULL, NULL);
+        if (x509 != NULL) {
+            validate_x509(x509, ca_certs_dir, &x509_info);
+            ck_assert_int_eq(x509_info.has_valid_cert, exp_result);
         } else {
-            ck_abort_msg("fopen() failed ('%s')", x509_filename);
+            ck_abort_msg("PEM_read_X509() failed");
         }
+        fclose(x509_cert_file);
     } else {
-        ck_abort_msg("chdir() failed ('%s')", strerror(errno));
+        ck_abort_msg("fopen() failed ('%s')", x509_cert);
     }
 }
 END_TEST
