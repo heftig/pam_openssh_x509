@@ -26,6 +26,7 @@ before_script:
 
 script:
     - ./configure --libdir=/lib/security --disable-dependency-tracking
-    - make
-    - make check
+#    - make
+#    - make check
+    - make distcheck
 
