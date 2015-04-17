@@ -431,7 +431,10 @@ pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
                 /* create bio chain base64->mem */
                 bio_base64 = BIO_push(bio_base64, bio_mem);
                 BIO_write(bio_base64, blob, post_length_blob);
-                BIO_flush(bio_base64);
+                int rc = BIO_flush(bio_base64);
+                if (rc != 1) {
+                    FATAL("BIO_flush()");
+                }
                 unsigned char *tmp_result = NULL;
                 long data_out = BIO_get_mem_data(bio_base64, &tmp_result);
 
