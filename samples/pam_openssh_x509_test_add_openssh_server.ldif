@@ -1,7 +1,0 @@
-dn: cn=pam_openssh_x509_test,ou=groups,ou=ssh,o=hq
-objectClass: top
-objectClass: groupOfNames
-cn: pam_openssh_x509_test
-description: pam_openssh_x509_test
-member: uid=__LAST_MAN_STANDING__
-

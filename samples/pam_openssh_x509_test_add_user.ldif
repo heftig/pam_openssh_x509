@@ -1,12 +1,12 @@
-dn: uid=sebastian,ou=person,ou=ssh,o=hq
+dn: uid=pam_openssh_x509_test_user,ou=people,dc=ssh,dc=hq
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
 objectClass: inetOrgPerson
-uid: sebastian
-givenName: sebastian
-sn: roland
-cn: sebastian roland
+uid: pam_openssh_x509_test_user
+givenName: pam_openssh_x509_test_user
+sn: pam_openssh_x509_test_user
+cn: pam_openssh_x509_test_user
 userCertificate;binary:: 
  MIIC2jCCAcICAQUwDQYJKoZIhvcNAQEEBQAwNDEXMBUGA1UEAwwOMDEtY2FfaW50
  X3VzZXIxDDAKBgNVBAsMA3NzaDELMAkGA1UECgwCaHEwHhcNMTQxMTA5MTAwNzI5

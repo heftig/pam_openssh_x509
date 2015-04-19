@@ -27,6 +27,9 @@ cn: schema
 include: file:///etc/openldap/schema/core.ldif
 include: file:///etc/openldap/schema/cosine.ldif
 include: file:///etc/openldap/schema/inetorgperson.ldif
+include: file:///etc/openldap/schema/openldap.ldif
+include: file:///etc/openldap/schema/nis.ldif
+include: file:///etc/openldap/schema/misc.ldif
 
 ################
 # olcBackend=x #
@@ -53,10 +56,10 @@ dn: olcDatabase=hdb,cn=config
 objectClass: olcDatabaseConfig
 objectClass: olcHdbConfig
 olcDatabase: hdb
-olcSuffix: ou=ssh,o=hq
-olcRootDN: cn=directory_manager,ou=ssh,o=hq
+olcSuffix: dc=ssh,dc=hq
+olcRootDN: cn=directory_manager,dc=ssh,dc=hq
 olcRootPW: {SSHA}qmkWtIXexBkldOPs1JlAqD64u/3Wl4S4
-olcDbDirectory:	/var/lib/openldap/ou=ssh,o=hq
+olcDbDirectory:	/var/lib/openldap/dc=ssh,dc=hq
 olcDbIndex: default eq
 olcDbIndex: uid
 olcDbIndex: objectclass pres,eq

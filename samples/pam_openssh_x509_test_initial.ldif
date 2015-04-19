@@ -1,15 +1,17 @@
-dn: ou=ssh,o=hq
+dn: dc=ssh,dc=hq
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+dc: ssh
+o: ssh headquarter
+
+dn: ou=people,dc=ssh,dc=hq
 objectClass: top
 objectClass: organizationalUnit
-ou: ssh
+ou: people
 
-dn: ou=groups,ou=ssh,o=hq
+dn: ou=groups,dc=ssh,dc=hq
 objectClass: top
 objectClass: organizationalUnit
 ou: groups
-
-dn: ou=person,ou=ssh,o=hq
-objectClass: top
-objectClass: organizationalUnit
-ou: person
 
