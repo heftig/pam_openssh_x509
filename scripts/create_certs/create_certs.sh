@@ -6,7 +6,7 @@
 # certificates...
 #
 # author: sebastian roland
-# date: 09.11.2014
+# date: 19.04.2015
 #
 ########################################
 
@@ -15,10 +15,10 @@
 # global
 ROOT='/home/sebastian/development/certs'                		    # path to root directory of testing env
 OPENSSL='/usr/bin/openssl'                                          # path to openssl binary
-SUBJECT_POSTFIX='/OU=ssh/O=hq'
+SUBJECT_POSTFIX='/DC=ssh/DC=hq'
 
 # root ca
-ROOT_CA_VALIDITY=1460                                               # validity in days for root ca
+ROOT_CA_VALIDITY=36500                                              # validity in days for root ca
 
 export ROOT                                                         # make var accessible for openssl config
 
