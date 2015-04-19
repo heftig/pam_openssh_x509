@@ -6,6 +6,7 @@
 *.log
 *.trs
 Makefile
+Makefile.in
 libtool
 tests/pam_openssh_x509_check
 autom4te.cache
@@ -14,8 +15,12 @@ config.cache
 config.log
 config.status
 configure.scan
+configure
 stamp-h1
 src/.deps
 src/.libs
 tests/.deps
+build-aux
+aclocal.m4
+m4
 
