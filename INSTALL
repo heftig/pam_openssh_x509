@@ -31,15 +31,15 @@ Solution stack
 --------------
 
  * syslog-ng 3.5.6
- * PAM 1.1.8
- * OpenSSL 1.0.1j
+ * PAM 0.83
+ * OpenSSL >= 1.0.1j
  * OpenSSH >= 6.2
  * libldap 2.4.40
  * OpenLDAP 2.4.40
  * libConfuse 2.7
  * pam_openssh_x509
  * PuTTY-CAC 0.62
- * check 0.9.14
+ * check >= 0.9.10
 
 
 Prerequisites
