@@ -21,7 +21,7 @@ install:
     - cd ${repo}
 
 before_script:
-    - ./bootstrap
+    - ./autogen.sh
     - sudo mkdir -p /usr/local/etc/ssh/cacerts
 
 script:
