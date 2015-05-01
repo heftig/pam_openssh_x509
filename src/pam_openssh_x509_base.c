@@ -271,7 +271,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         FATAL("arg count != 1");
     }
     const char *cfg_file = argv[0];
-    int rc = is_file_readable(cfg_file);
+    int rc = is_readable_file(cfg_file);
     if (rc != 0) {
         FATAL("cannot open config file (%s) for reading", cfg_file);
     }

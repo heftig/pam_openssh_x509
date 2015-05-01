@@ -198,7 +198,7 @@ case "${arg1}" in
 
             # create root ca
             echo "creating root ca"
-            ${OPENSSL} req -new -x509 -days ${ROOT_CA_VALIDITY} -keyout ${ROOT}/ca/00-ca_root_key.pem -out ${ROOT}/ca/00-ca_root_cert.pem -subj "/CN=00-ca_root${SUBJECT_POSTFIX}" -config ${openssl_conf} &> /dev/null
+            ${OPENSSL} req -new -x509 -days ${ROOT_CA_VALIDITY} -keyout ${ROOT}/ca/00-ca_root_key.pem -out ${ROOT}/ca/00-ca_root_cert.pem -subj "/CN=00-ca_root${SUBJECT_POSTFIX}" -extensions ca_extension -config ${openssl_conf} &> /dev/null
 
             # create intermediate ca's
             echo "creating intermediate ca's"
@@ -207,15 +207,15 @@ case "${arg1}" in
             ${OPENSSL} req -new -keyout ${ROOT}/ca/01-ca_int_email_key.pem -out ${ROOT}/ca/csr/01-ca_int_email_cert.csr -subj "/CN=01-ca_int_email${SUBJECT_POSTFIX}" -config ${openssl_conf} &> /dev/null
             ${OPENSSL} req -new -keyout ${ROOT}/ca/01-ca_int_user_key.pem -out ${ROOT}/ca/csr/01-ca_int_user_cert.csr -subj "/CN=01-ca_int_user${SUBJECT_POSTFIX}" -config ${openssl_conf} &> /dev/null
             # sign requests
-            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_server_cert.csr -out ${ROOT}/ca/01-ca_int_server_cert.pem -config ${openssl_conf} &> /dev/null << EOF
+            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_server_cert.csr -out ${ROOT}/ca/01-ca_int_server_cert.pem -extensions ca_extension -config ${openssl_conf} &> /dev/null << EOF
 y
 y
 EOF
-            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_email_cert.csr -out ${ROOT}/ca/01-ca_int_email_cert.pem -config ${openssl_conf} &> /dev/null << EOF
+            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_email_cert.csr -out ${ROOT}/ca/01-ca_int_email_cert.pem -extensions ca_extension -config ${openssl_conf} &> /dev/null << EOF
 y
 y
 EOF
-            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_user_cert.csr -out ${ROOT}/ca/01-ca_int_user_cert.pem -config ${openssl_conf} &> /dev/null << EOF
+            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_user_cert.csr -out ${ROOT}/ca/01-ca_int_user_cert.pem -extensions ca_extension -config ${openssl_conf} &> /dev/null << EOF
 y
 y
 EOF

@@ -7,6 +7,9 @@ cn: config
 olcArgsFile: /run/openldap/slapd.args
 olcPidFile: /run/openldap/slapd.pid
 olcLogLevel: stats
+#olcTLSCACertificatePath: /usr/local/etc/ssh/cacerts/
+#olcTLSCertificateFile: /etc/openldap/certs/10-ee_server_1_cert.pem
+#olcTLSCertificateKeyFile: /etc/openldap/certs/10-ee_server_1_key.pem
 
 #############
 # cn=module #

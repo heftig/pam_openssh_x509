@@ -156,10 +156,10 @@ set_log_facility(const char *lf_in)
 }
 
 int
-is_file_readable(const char *file)
+is_readable_file(const char *file)
 {
     if (file == NULL) {
-        FATAL("is_file_readable(): file == NULL");
+        FATAL("is_readable_file(): file == NULL");
     }
 
     struct stat stat_buffer;

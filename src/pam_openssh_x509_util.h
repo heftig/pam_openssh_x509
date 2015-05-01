@@ -38,7 +38,7 @@
 enum __sections { SYSLOG, LIBLDAP };
 
 /* function declarations */
-int is_file_readable(const char *file);
+int is_readable_file(const char *file);
 long int config_lookup(const enum __sections sec, const char *key);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
 void substitute_token(char token, char *subst, char *src, char *dst, int dst_length);
