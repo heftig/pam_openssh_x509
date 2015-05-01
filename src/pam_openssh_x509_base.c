@@ -91,11 +91,36 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
         FATAL("ldap_initialize(): '%s' (%d)", ldap_err2string(rc), rc);
     }
 
-    /* set version */
+    /* set protocol version */
     int ldap_version = cfg_getint(cfg, "ldap_version");
     rc = ldap_set_option(ldap_handle, LDAP_OPT_PROTOCOL_VERSION, &ldap_version);
     if (rc != LDAP_OPT_SUCCESS) {
         FATAL("ldap_set_option(): key: LDAP_OPT_PROTOCOL_VERSION, value: %i", ldap_version);
+    }
+
+    /* force validation of certificates when using ldaps */
+    int req_cert = LDAP_OPT_X_TLS_HARD;
+    rc = ldap_set_option(ldap_handle, LDAP_OPT_X_TLS_REQUIRE_CERT, &req_cert);
+    if (rc != LDAP_OPT_SUCCESS) {
+        FATAL("ldap_set_option(): key: LDAP_OPT_X_TLS_REQUIRE_CERT, value: %i", req_cert);
+    }
+
+    /* set trusted ca path */
+    char *cacerts_dir = cfg_getstr(cfg, "cacerts_dir");
+    rc = ldap_set_option(ldap_handle, LDAP_OPT_X_TLS_CACERTDIR, cacerts_dir);
+    if (rc != LDAP_OPT_SUCCESS) {
+        FATAL("ldap_set_option(): key: LDAP_OPT_X_TLS_CACERTDIR, value: %s", cacerts_dir);
+    }
+
+    /*
+     * set new tls context
+     *
+     * has to be done to apply the options set above regarding tls
+     */
+    int new_ctx = 0x56;
+    rc = ldap_set_option(ldap_handle, LDAP_OPT_X_TLS_NEWCTX, &new_ctx);
+    if (rc != LDAP_OPT_SUCCESS) {
+        FATAL("ldap_set_option(): key: LDAP_OPT_X_TLS_NEWCTX, value: %i", new_ctx);
     }
 
     /* bind to server */
