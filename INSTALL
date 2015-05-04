@@ -201,7 +201,7 @@ $ make install
 $ cp samples/pam_openssh_x509.conf /usr/local/etc/ssh/
 
 3) Copy PAM configuration
-$ cp samples/sshd /etc/pam.d/
+$ cp -i samples/sshd /etc/pam.d/
 
 
 PuTTY-CAC
