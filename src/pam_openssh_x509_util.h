@@ -35,11 +35,11 @@
     (cp)[3] = (unsigned char)(value) )
 
 /* type declarations */
-enum __sections { SYSLOG, LIBLDAP };
+enum pox509_sections { SYSLOG, LIBLDAP };
 
 /* function declarations */
 int is_readable_file(const char *file);
-long int config_lookup(const enum __sections sec, const char *key);
+long int config_lookup(const enum pox509_sections sec, const char *key);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
 void substitute_token(char token, char *subst, char *src, char *dst, int dst_length);
 void check_access_permission(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info);

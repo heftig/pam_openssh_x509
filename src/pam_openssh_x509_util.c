@@ -25,12 +25,12 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-struct __config_lookup_table {
+struct pox509_config_lookup_table {
     char *name;
     int value;
 };
 
-static struct __config_lookup_table syslog_facilities[] =
+static struct pox509_config_lookup_table syslog_facilities[] =
     {
         { "LOG_KERN", LOG_KERN },
         { "LOG_USER", LOG_USER },
@@ -56,7 +56,7 @@ static struct __config_lookup_table syslog_facilities[] =
         { NULL, 0 }
     };
 
-static struct __config_lookup_table libldap[] =
+static struct pox509_config_lookup_table libldap[] =
     {
         { "LDAP_VERSION1", LDAP_VERSION1 },
         { "LDAP_VERSION2", LDAP_VERSION2 },
@@ -73,18 +73,18 @@ static struct __config_lookup_table libldap[] =
         { NULL, 0 }
     };
 
-static struct __config_lookup_table *_config_lookup[] = { syslog_facilities, libldap };
+static struct pox509_config_lookup_table *config_lookup_table[] = { syslog_facilities, libldap };
 
 long int
-config_lookup(const enum __sections sec, const char *key)
+config_lookup(const enum pox509_sections sec, const char *key)
 {
     if (key == NULL) {
         FATAL("config_lookup(): key == NULL");
-    };
+    }
 
     if (sec == SYSLOG || sec == LIBLDAP) {
-        struct __config_lookup_table *lookup_ptr = NULL;
-        for (lookup_ptr = _config_lookup[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
+        struct pox509_config_lookup_table *lookup_ptr = NULL;
+        for (lookup_ptr = config_lookup_table[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
             if (strcasecmp(lookup_ptr->name, key) == 0) {
                 return lookup_ptr->value;
             }
@@ -96,7 +96,7 @@ config_lookup(const enum __sections sec, const char *key)
 static long int log_facility = DEFAULT_LOG_FACILITY;
 
 static void
-__LOG(char *prefix, const char *fmt, va_list ap)
+POX509_LOG(char *prefix, const char *fmt, va_list ap)
 {
     char buffer[LOG_BUFFER_SIZE];
     vsnprintf(buffer, LOG_BUFFER_SIZE, fmt, ap);
@@ -108,7 +108,7 @@ LOG_MSG(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    __LOG("[#]", fmt, ap);
+    POX509_LOG("[#]", fmt, ap);
     va_end(ap);
 }
 
@@ -117,7 +117,7 @@ LOG_SUCCESS(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    __LOG("[+]", fmt, ap);
+    POX509_LOG("[+]", fmt, ap);
     va_end(ap);
 }
 
@@ -126,7 +126,7 @@ LOG_FAIL(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    __LOG("[-]", fmt, ap);
+    POX509_LOG("[-]", fmt, ap);
     va_end(ap);
 }
 
@@ -135,7 +135,7 @@ FATAL(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    __LOG("[!]", fmt, ap);
+    POX509_LOG("[!]", fmt, ap);
     va_end(ap);
     exit(EXIT_FAILURE);
 }
@@ -449,7 +449,7 @@ pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
                 if (rc != 1) {
                     FATAL("BIO_flush()");
                 }
-                unsigned char *tmp_result = NULL;
+                char *tmp_result = NULL;
                 long data_out = BIO_get_mem_data(bio_base64, &tmp_result);
 
                 /* store key */
