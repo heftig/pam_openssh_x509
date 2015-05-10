@@ -66,7 +66,7 @@ static struct pox509_test_check_access_permission_item test_check_access_permiss
         { "=a,", "a", 0 },
     };
 
-static struct pox509_test_validate_x509_item _test_validate_x509_lt[] =
+static struct pox509_test_validate_x509_item test_validate_x509_lt[] =
     {
         { X509CERTSDIR "/not_trusted_ca.pem", 0 },
         { X509CERTSDIR "/trusted_ca_but_expired.pem", 0 },
@@ -108,11 +108,11 @@ END_TEST
 START_TEST
 (test_substitute_token)
 {
-    char token = _test_substitute_token_lt[_i].token;
-    char *subst = _test_substitute_token_lt[_i].subst;
-    char *src = _test_substitute_token_lt[_i].src;
-    int dst_length = _test_substitute_token_lt[_i].dst_length;
-    char *exp_result = _test_substitute_token_lt[_i].exp_result;
+    char token = test_substitute_token_lt[_i].token;
+    char *subst = test_substitute_token_lt[_i].subst;
+    char *src = test_substitute_token_lt[_i].src;
+    int dst_length = test_substitute_token_lt[_i].dst_length;
+    char *exp_result = test_substitute_token_lt[_i].exp_result;
 
     int dst_buffer_length = 1024;
     char dst[dst_buffer_length];
@@ -275,9 +275,9 @@ END_TEST
 START_TEST
 (test_check_access_permission)
 {
-    char *group_dn = _test_check_access_permission_lt[_i].group_dn;
-    char *identifier = _test_check_access_permission_lt[_i].identifier;
-    char exp_result = _test_check_access_permission_lt[_i].exp_result;
+    char *group_dn = test_check_access_permission_lt[_i].group_dn;
+    char *identifier = test_check_access_permission_lt[_i].identifier;
+    char exp_result = test_check_access_permission_lt[_i].exp_result;
 
     struct pam_openssh_x509_info x509_info;
     x509_info.has_access = -1;
@@ -326,8 +326,8 @@ END_TEST
 START_TEST
 (test_validate_x509)
 {
-    char *x509_cert = _test_validate_x509_lt[_i].file;
-    char exp_result = _test_validate_x509_lt[_i].exp_result;
+    char *x509_cert = test_validate_x509_lt[_i].file;
+    char exp_result = test_validate_x509_lt[_i].exp_result;
 
     struct pam_openssh_x509_info x509_info;
     x509_info.has_valid_cert = -1;
