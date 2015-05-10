@@ -50,13 +50,11 @@ START_TEST
 {
     char *config_file = _test_init_and_parse_config_exit_lt[_i];
 
-    int rc = is_readable_file(config_file);
-    if (rc == 0) {
-        cfg_t *cfg = NULL;
-        init_and_parse_config(&cfg, config_file);
-    } else {
-        ck_abort_msg("is_readable_file() failed (%s)", config_file);
+    if(!is_readable_file(config_file)) {
+        ck_abort_msg("is_readable_file() returned false (%s)", config_file);
     }
+    cfg_t *cfg = NULL;
+    init_and_parse_config(&cfg, config_file);
 }
 END_TEST
 
@@ -65,13 +63,11 @@ START_TEST
 {
     char *config_file = _test_init_and_parse_config_lt[_i];
 
-    int rc = is_readable_file(config_file);
-    if (rc == 0) {
-        cfg_t *cfg = NULL;
-        init_and_parse_config(&cfg, config_file);
-    } else {
-        ck_abort_msg("is_readable_file() failed (%s)", config_file);
+    if(!is_readable_file(config_file)) {
+        ck_abort_msg("is_readable_file() returned false (%s)", config_file);
     }
+    cfg_t *cfg = NULL;
+    init_and_parse_config(&cfg, config_file);
 }
 END_TEST
 

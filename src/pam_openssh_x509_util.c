@@ -165,17 +165,23 @@ is_readable_file(const char *file)
     struct stat stat_buffer;
 
     int rc = stat(file, &stat_buffer);
-    if (rc == 0) {
-        /* check if we have a file */
-        if (S_ISREG(stat_buffer.st_mode)) {
-            /* check if readable */
-            rc = access(file, R_OK);
-            if (rc == 0) {
-                return 0;
-            }
-        }
+    if (rc != 0) {
+        goto ret_false;
     }
-    return -1;
+    /* check if we have a file */
+    if (!S_ISREG(stat_buffer.st_mode)) {
+        goto ret_false;
+    }
+    /* check if readable */
+    rc = access(file, R_OK);
+    if (rc != 0) {
+        goto ret_false;
+    }
+
+    return 1;
+
+ret_false:
+    return 0;
 }
 
 static int
@@ -237,32 +243,34 @@ substitute_token(char token, char *subst, char *src, char *dst, int dst_length)
         FATAL("substitute_token(): subst, src or dst == NULL");
     }
 
-    if (dst_length > 0) {
-        bool cdt = 0;
-        int j = 0;
-        size_t strlen_subst = strlen(subst);
-        int i;
-        for (i = 0; (src[i] != '\0') && (j < dst_length - 1); i++) {
-            if (cdt) {
-                cdt = 0;
-                if (src[i] == token) {
-                    j--;
-                    /* substitute token in dst buffer */
-                    int k;
-                    for (k = 0; (j < dst_length - 1) && (k < strlen_subst); k++) {
-                        dst[j++] = subst[k];
-                    }
-                    continue;
-                }
-            }
-            if (src[i] == '%') {
-                cdt = 1;
-            }
-            /* copy char to dst buffer */
-            dst[j++] = src[i];
-        }
-        dst[j] = '\0';
+    if (dst_length < 1) {
+        return;
     }
+
+    bool cdt = 0;
+    int j = 0;
+    size_t strlen_subst = strlen(subst);
+    int i;
+    for (i = 0; (src[i] != '\0') && (j < dst_length - 1); i++) {
+        if (cdt) {
+            cdt = 0;
+            if (src[i] == token) {
+                j--;
+                /* substitute token in dst buffer */
+                int k;
+                for (k = 0; (j < dst_length - 1) && (k < strlen_subst); k++) {
+                    dst[j++] = subst[k];
+                }
+                continue;
+            }
+        }
+        if (src[i] == '%') {
+            cdt = 1;
+        }
+        /* copy char to dst buffer */
+        dst[j++] = src[i];
+    }
+    dst[j] = '\0';
 }
 
 void
@@ -280,16 +288,21 @@ check_access_permission(char *group_dn, char *identifier, struct pam_openssh_x50
     strncpy(group_dn_mutable, group_dn, GROUP_DN_BUFFER_SIZE);
 
     char *token = strtok(group_dn_mutable, "=");
-    if (token != NULL) {
-        token = strtok(NULL, ",");
-        if (token != NULL) {
-            /* token now contains rdn value of group only */
-            if (strcmp(token, identifier) == 0) {
-                x509_info->has_access = 1;
-                return;
-            }
-        }
+    if (token == NULL) {
+        goto no_access;
     }
+    token = strtok(NULL, ",");
+    if (token == NULL) {
+        goto no_access;
+    }
+    /* token now contains rdn value of group only */
+    if (strcmp(token, identifier) != 0) {
+        goto no_access;
+    }
+    x509_info->has_access = 1;
+    return;
+
+no_access:
     x509_info->has_access = 0;
 }
 
@@ -351,6 +364,7 @@ pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
 
     int pkey_type = EVP_PKEY_type(pkey->type);
     switch (pkey_type) {
+
         case EVP_PKEY_RSA:
             {
                 x509_info->ssh_keytype = strdup("ssh-rsa");
@@ -451,21 +465,25 @@ pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
 
                 break;
             }
+
         case EVP_PKEY_DSA:
             {
                 LOG_MSG("dsa...");
                 break;
             }
+
         case EVP_PKEY_DH:
             {
                 LOG_MSG("dh...");
                 break;
             }
+
         case EVP_PKEY_EC:
             {
                 LOG_MSG("ec...");
                 break;
             }
+
         default:
             {
                 LOG_FAIL("unsupported public key type (%i)", pkey->type);

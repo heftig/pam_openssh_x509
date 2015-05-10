@@ -154,42 +154,42 @@ START_TEST
     char *oneliner = KEYSDIR "/ssh_rsa.txt";
 
     FILE *fh_oneliner = fopen(oneliner, "r");
-    if (fh_oneliner != NULL) {
-        char line_buffer[BUFFER_SIZE];
-        while (fgets(line_buffer, sizeof(line_buffer), fh_oneliner) != NULL) {
-            char *pem_file_rel = strtok(line_buffer, ":");
-            char *ssh_rsa = strtok(NULL, "\n");
-            if (pem_file_rel != NULL && ssh_rsa != NULL) {
-                char pem_file_abs[BUFFER_SIZE];
-                strncpy(pem_file_abs, directory, sizeof(pem_file_abs));
-                strncat(pem_file_abs, "/", sizeof(pem_file_abs) - strlen(pem_file_abs) - 1);
-                strncat(pem_file_abs, pem_file_rel, sizeof(pem_file_abs) - strlen(pem_file_abs) - 1);
-                FILE *f_pem_file = fopen(pem_file_abs, "r");
-                if (f_pem_file != NULL) {
-                    EVP_PKEY *pkey = PEM_read_PUBKEY(f_pem_file, NULL, NULL, NULL);
-                    if (pkey != NULL) {
-                        struct pam_openssh_x509_info x509_info;
-                        pkey_to_authorized_keys(pkey, &x509_info);
-                        char exp_ssh_rsa[BUFFER_SIZE];
-                        strncpy(exp_ssh_rsa, x509_info.ssh_keytype, sizeof(exp_ssh_rsa));
-                        strncat(exp_ssh_rsa, " ", sizeof(exp_ssh_rsa) - strlen(exp_ssh_rsa) - 1);
-                        strncat(exp_ssh_rsa, x509_info.ssh_key, sizeof(exp_ssh_rsa) - strlen(exp_ssh_rsa) - 1);
-                        ck_assert_str_eq(ssh_rsa, exp_ssh_rsa);
-                    } else {
-                        ck_abort_msg("PEM_read_PUBKEY() failed ('%s')", pem_file_abs);
-                    }
-                    fclose(f_pem_file);
-                } else {
-                    ck_abort_msg("fopen() failed ('%s')", pem_file_abs);
-                }
-            } else {
-                ck_abort_msg("parsing failure");
-            }
-        }
-        fclose(fh_oneliner);
-    } else {
+    if (fh_oneliner == NULL) {
         ck_abort_msg("fopen() failed ('%s')", oneliner);
     }
+
+    char line_buffer[BUFFER_SIZE];
+    while (fgets(line_buffer, sizeof(line_buffer), fh_oneliner) != NULL) {
+        char *pem_file_rel = strtok(line_buffer, ":");
+        char *ssh_rsa = strtok(NULL, "\n");
+        if (pem_file_rel == NULL || ssh_rsa == NULL) {
+            ck_abort_msg("parsing failure");
+        }
+
+        char pem_file_abs[BUFFER_SIZE];
+        strncpy(pem_file_abs, directory, sizeof(pem_file_abs));
+        strncat(pem_file_abs, "/", sizeof(pem_file_abs) - strlen(pem_file_abs) - 1);
+        strncat(pem_file_abs, pem_file_rel, sizeof(pem_file_abs) - strlen(pem_file_abs) - 1);
+        FILE *f_pem_file = fopen(pem_file_abs, "r");
+        if (f_pem_file == NULL) {
+            ck_abort_msg("fopen() failed ('%s')", pem_file_abs);
+        }
+
+        EVP_PKEY *pkey = PEM_read_PUBKEY(f_pem_file, NULL, NULL, NULL);
+        if (pkey == NULL) {
+            ck_abort_msg("PEM_read_PUBKEY() failed ('%s')", pem_file_abs);
+        }
+
+        struct pam_openssh_x509_info x509_info;
+        pkey_to_authorized_keys(pkey, &x509_info);
+        char exp_ssh_rsa[BUFFER_SIZE];
+        strncpy(exp_ssh_rsa, x509_info.ssh_keytype, sizeof(exp_ssh_rsa));
+        strncat(exp_ssh_rsa, " ", sizeof(exp_ssh_rsa) - strlen(exp_ssh_rsa) - 1);
+        strncat(exp_ssh_rsa, x509_info.ssh_key, sizeof(exp_ssh_rsa) - strlen(exp_ssh_rsa) - 1);
+        ck_assert_str_eq(ssh_rsa, exp_ssh_rsa);
+        fclose(f_pem_file);
+    }
+    fclose(fh_oneliner);
 }
 END_TEST
 
@@ -335,18 +335,17 @@ START_TEST
     char *ca_certs_dir = CACERTSDIR;
 
     FILE *x509_cert_file = fopen(x509_cert, "r");
-    if (x509_cert_file != NULL) {
-        X509* x509 = PEM_read_X509(x509_cert_file, NULL, NULL, NULL);
-        if (x509 != NULL) {
-            validate_x509(x509, ca_certs_dir, &x509_info);
-            ck_assert_int_eq(x509_info.has_valid_cert, exp_result);
-        } else {
-            ck_abort_msg("PEM_read_X509() failed");
-        }
-        fclose(x509_cert_file);
-    } else {
+    if (x509_cert_file == NULL) {
         ck_abort_msg("fopen() failed ('%s')", x509_cert);
     }
+
+    X509* x509 = PEM_read_X509(x509_cert_file, NULL, NULL, NULL);
+    if (x509 == NULL) {
+        ck_abort_msg("PEM_read_X509() failed");
+    }
+    validate_x509(x509, ca_certs_dir, &x509_info);
+    ck_assert_int_eq(x509_info.has_valid_cert, exp_result);
+    fclose(x509_cert_file);
 }
 END_TEST
 

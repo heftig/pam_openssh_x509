@@ -130,12 +130,12 @@ cfg_validate_cacerts_dir(cfg_t *cfg, cfg_opt_t *opt)
     const char *cacerts_dir = cfg_opt_getnstr(opt, 0);
     /* check if directory exists */
     DIR *cacerts_dir_stream = opendir(cacerts_dir);
-    if (cacerts_dir_stream != NULL) {
-        closedir(cacerts_dir_stream);
-    } else {
+    if (cacerts_dir_stream == NULL) {
         cfg_error(cfg, "cfg_validate_cacerts_dir(): option: '%s', value: '%s' (%s)", cfg_opt_name(opt), cacerts_dir, strerror(errno));
         return -1;
     }
+    closedir(cacerts_dir_stream);
+
     return 0;
 }
 

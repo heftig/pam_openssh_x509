@@ -37,51 +37,50 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
     struct pam_openssh_x509_info *x509_info = NULL;
     int rc = pam_get_data(pamh, "x509_info", (const void **) &x509_info);
-    if (rc == PAM_SUCCESS) {
-        /* set log facility */
-        rc = set_log_facility(x509_info->log_facility);
-        if (rc == -EINVAL) {
-            LOG_FAIL("set_log_facility(%s)", x509_info->log_facility);
-        }
-        
-        /* only modify authorized_keys file if LDAP server could be queried */
-        if (x509_info->directory_online == 1) {
-            if (authorized(x509_info)) {
-                LOG_MSG("access granted!");
-                LOG_MSG("synchronizing keys");
-                if (x509_info->ssh_keytype != NULL && x509_info->ssh_key != NULL) {
-                    /* write key to authorized_keys file */
-                    FILE *fd_auth_keys = fopen(x509_info->authorized_keys_file, "w");
-                    if (fd_auth_keys != NULL) {
-                        fwrite(x509_info->ssh_keytype, strlen(x509_info->ssh_keytype), 1, fd_auth_keys);
-                        fwrite(" ", 1, 1, fd_auth_keys);
-                        fwrite(x509_info->ssh_key, strlen(x509_info->ssh_key), 1, fd_auth_keys);
-                        fwrite("\n", 1, 1, fd_auth_keys);
-                        fclose(fd_auth_keys);
-                    } else {
-                        LOG_FAIL("cannot open '%s' for writing", x509_info->authorized_keys_file);
-                    }
-                } else {
-                    LOG_FAIL("cannot synchronize keys. either key or keytype not known");
-                }
-            } else {
-                LOG_MSG("access denied!");
-                LOG_MSG("truncating authorized_keys file (%s)", x509_info->authorized_keys_file);
-                FILE *fd_auth_keys = fopen(x509_info->authorized_keys_file, "w");
-                if (fd_auth_keys != NULL) {
-                    fclose(fd_auth_keys);
-                } else {
-                    LOG_FAIL("truncation of '%s' failed", x509_info->authorized_keys_file);
-                    goto auth_err;
-                }
-            }
-        } else {
-            LOG_MSG("ldap server not accessible. not changing anything");
-        }
-    } else {
+    if (rc != PAM_SUCCESS) {
         FATAL("pam_get_data()");
     }
 
+    /* set log facility */
+    rc = set_log_facility(x509_info->log_facility);
+    if (rc == -EINVAL) {
+        LOG_FAIL("set_log_facility(%s)", x509_info->log_facility);
+    }
+
+    /* only modify authorized_keys file if LDAP server could be queried */
+    if (x509_info->directory_online != 1) {
+        LOG_MSG("ldap server not accessible. not changing anything");
+        goto auth_success;
+    }
+
+    if (authorized(x509_info)) {
+        LOG_MSG("access granted!");
+        LOG_MSG("synchronizing keys");
+        if (x509_info->ssh_keytype == NULL || x509_info->ssh_key == NULL) {
+            FATAL("cannot synchronize keys. either key or keytype not known");
+        }
+        /* write key to authorized_keys file */
+        FILE *fd_auth_keys = fopen(x509_info->authorized_keys_file, "w");
+        if (fd_auth_keys == NULL) {
+            FATAL("cannot open '%s' for writing", x509_info->authorized_keys_file);
+        }
+        fwrite(x509_info->ssh_keytype, strlen(x509_info->ssh_keytype), 1, fd_auth_keys);
+        fwrite(" ", 1, 1, fd_auth_keys);
+        fwrite(x509_info->ssh_key, strlen(x509_info->ssh_key), 1, fd_auth_keys);
+        fwrite("\n", 1, 1, fd_auth_keys);
+        fclose(fd_auth_keys);
+    } else {
+        LOG_MSG("access denied!");
+        LOG_MSG("truncating authorized_keys file (%s)", x509_info->authorized_keys_file);
+        FILE *fd_auth_keys = fopen(x509_info->authorized_keys_file, "w");
+        if (fd_auth_keys == NULL) {
+            LOG_FAIL("truncation of '%s' failed", x509_info->authorized_keys_file);
+            goto auth_err;
+        }
+        fclose(fd_auth_keys);
+    }
+
+auth_success:
     return PAM_SUCCESS;
 
 auth_err:

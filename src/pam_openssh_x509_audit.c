@@ -59,30 +59,31 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
     struct pam_openssh_x509_info *x509_info = NULL;
     int rc = pam_get_data(pamh, "x509_info", (const void **) &x509_info);
-    if (rc == PAM_SUCCESS) {
-        /* set log facility */
-        rc = set_log_facility(x509_info->log_facility);
-        if (rc == -EINVAL) {
-            LOG_FAIL("set_log_facility(%s)", x509_info->log_facility);
-        }
-        LOG_MSG("===================================================");
-        log_string("uid", x509_info->uid);
-        log_string("auth_keys_file", x509_info->authorized_keys_file);
-        log_string("ssh_keytype", x509_info->ssh_keytype);
-        log_string("ssh_key", x509_info->ssh_key);
-        LOG_MSG("");
-        log_char("has_cert", x509_info->has_cert);
-        log_char("has_valid_cert", x509_info->has_valid_cert);
-        log_string("serial", x509_info->serial);
-        log_string("issuer", x509_info->issuer);
-        log_string("subject", x509_info->subject);
-        LOG_MSG("");
-        log_char("is_directory_online", x509_info->directory_online);
-        log_char("has_access", x509_info->has_access);
-        LOG_MSG("===================================================");
-    } else {
+    if (rc != PAM_SUCCESS) {
         FATAL("pam_get_data()");
     }
+
+    /* set log facility */
+    rc = set_log_facility(x509_info->log_facility);
+    if (rc == -EINVAL) {
+        LOG_FAIL("set_log_facility(%s)", x509_info->log_facility);
+    }
+
+    LOG_MSG("===================================================");
+    log_string("uid", x509_info->uid);
+    log_string("auth_keys_file", x509_info->authorized_keys_file);
+    log_string("ssh_keytype", x509_info->ssh_keytype);
+    log_string("ssh_key", x509_info->ssh_key);
+    LOG_MSG("");
+    log_char("has_cert", x509_info->has_cert);
+    log_char("has_valid_cert", x509_info->has_valid_cert);
+    log_string("serial", x509_info->serial);
+    log_string("issuer", x509_info->issuer);
+    log_string("subject", x509_info->subject);
+    LOG_MSG("");
+    log_char("is_directory_online", x509_info->directory_online);
+    log_char("has_access", x509_info->has_access);
+    LOG_MSG("===================================================");
 
     return PAM_SUCCESS;
 }
