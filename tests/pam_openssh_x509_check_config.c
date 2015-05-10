@@ -32,6 +32,8 @@ static char *_test_init_and_parse_config_exit_lt[] =
     CONFIGSDIR "/cfg_str_to_int_parser_libldap_ldap_version_negative.conf",
     CONFIGSDIR "/cfg_validate_log_facility_negative.conf",
     CONFIGSDIR "/cfg_validate_ldap_uri_negative.conf",
+    CONFIGSDIR "/cfg_validate_ldap_starttls_negative_0.conf",
+    CONFIGSDIR "/cfg_validate_ldap_starttls_negative_1.conf",
     CONFIGSDIR "/cfg_validate_ldap_search_timeout_negative.conf",
     CONFIGSDIR "/cfg_validate_cacerts_dir_negative_0.conf",
     CONFIGSDIR "/cfg_validate_cacerts_dir_negative_1.conf",
@@ -209,6 +211,31 @@ START_TEST
 END_TEST
 
 START_TEST
+(cfg_validate_ldap_starttls_exit_cfg_NULL)
+{
+    cfg_opt_t opt;
+
+    cfg_validate_ldap_starttls(NULL, &opt);
+}
+END_TEST
+
+START_TEST
+(cfg_validate_ldap_starttls_exit_opt_NULL)
+{
+    cfg_t cfg;
+
+    cfg_validate_ldap_starttls(&cfg, NULL);
+}
+END_TEST
+
+START_TEST
+(cfg_validate_ldap_starttls_exit_cfg_opt_NULL)
+{
+    cfg_validate_ldap_starttls(NULL, NULL);
+}
+END_TEST
+
+START_TEST
 (cfg_validate_ldap_search_timeout_exit_cfg_NULL)
 {
     cfg_opt_t opt;
@@ -295,6 +322,10 @@ make_config_suite(void)
     tcase_add_exit_test(tc_callbacks, cfg_validate_ldap_uri_exit_cfg_NULL, EXIT_FAILURE);
     tcase_add_exit_test(tc_callbacks, cfg_validate_ldap_uri_exit_opt_NULL, EXIT_FAILURE);
     tcase_add_exit_test(tc_callbacks, cfg_validate_ldap_uri_exit_cfg_opt_NULL, EXIT_FAILURE);
+
+    tcase_add_exit_test(tc_callbacks, cfg_validate_ldap_starttls_exit_cfg_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_callbacks, cfg_validate_ldap_starttls_exit_opt_NULL, EXIT_FAILURE);
+    tcase_add_exit_test(tc_callbacks, cfg_validate_ldap_starttls_exit_cfg_opt_NULL, EXIT_FAILURE);
 
     tcase_add_exit_test(tc_callbacks, cfg_validate_ldap_search_timeout_exit_cfg_NULL, EXIT_FAILURE);
     tcase_add_exit_test(tc_callbacks, cfg_validate_ldap_search_timeout_exit_opt_NULL, EXIT_FAILURE);

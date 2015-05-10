@@ -91,6 +91,21 @@ cfg_validate_ldap_uri(cfg_t *cfg, cfg_opt_t *opt)
 }
 
 static int
+cfg_validate_ldap_starttls(cfg_t *cfg, cfg_opt_t *opt)
+{
+    if (cfg == NULL || opt == NULL) {
+        FATAL("cfg_validate_ldap_starttls(): cfg or opt == NULL");
+    }
+
+    long int starttls = cfg_opt_getnint(opt, 0);
+    if (starttls != 0 && starttls != 1) {
+        cfg_error(cfg, "cfg_validate_ldap_starttls(): option: '%s', value: '%li' (value must be either 0 or 1)", cfg_opt_name(opt), starttls);
+        return -1;
+    }
+    return 0;
+}
+
+static int
 cfg_validate_ldap_search_timeout(cfg_t *cfg, cfg_opt_t *opt)
 {
     if (cfg == NULL || opt == NULL) {
@@ -135,6 +150,7 @@ init_and_parse_config(cfg_t **cfg, const char *cfg_file)
     cfg_opt_t opts[] = { 
         CFG_STR("log_facility", "LOG_LOCAL1", CFGF_NONE),
         CFG_STR("ldap_uri", "ldap://localhost:389", CFGF_NONE),
+        CFG_INT("ldap_starttls", 0, CFGF_NONE),
         CFG_STR("ldap_bind_dn", "cn=directory_manager,dc=ssh,dc=hq", CFGF_NONE),
         CFG_STR("ldap_pwd", "test123", CFGF_NONE),
         CFG_STR("ldap_base", "ou=people,dc=ssh,dc=hq", CFGF_NONE),
@@ -156,6 +172,7 @@ init_and_parse_config(cfg_t **cfg, const char *cfg_file)
     cfg_set_error_function(*cfg, &cfg_error_handler);
     cfg_set_validate_func(*cfg, "log_facility", &cfg_validate_log_facility);
     cfg_set_validate_func(*cfg, "ldap_uri", &cfg_validate_ldap_uri);
+    cfg_set_validate_func(*cfg, "ldap_starttls", &cfg_validate_ldap_starttls);
     cfg_set_validate_func(*cfg, "ldap_search_timeout", &cfg_validate_ldap_search_timeout);
     cfg_set_validate_func(*cfg, "cacerts_dir", &cfg_validate_cacerts_dir);
 

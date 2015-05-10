@@ -123,6 +123,18 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
         FATAL("ldap_set_option(): key: LDAP_OPT_X_TLS_NEWCTX, value: %i", new_ctx);
     }
 
+    /* init STARTTLS if set */
+    int ldap_starttls = cfg_getint(cfg, "ldap_starttls");
+    if (ldap_starttls) {
+        rc = ldap_start_tls_s(ldap_handle, NULL, NULL);
+        if (rc != LDAP_SUCCESS) {
+            char *msg = NULL;
+            ldap_get_option(ldap_handle, LDAP_OPT_DIAGNOSTIC_MESSAGE, &msg);
+            FATAL("ldap_start_tls_s(): '%s - %s' (%d)", ldap_err2string(rc), msg, rc);
+            //ldap_memfree(msg);
+        }
+    }
+
     /* bind to server */
     char *ldap_pwd = cfg_getstr(cfg, "ldap_pwd");
     size_t ldap_pwd_length = strlen(ldap_pwd);
