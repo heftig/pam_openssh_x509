@@ -153,11 +153,11 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
 
     /* construct search filter */
     char filter[LDAP_SEARCH_FILTER_BUFFER_SIZE];
-    strncpy(filter, cfg_getstr(cfg, "ldap_attr_rdn_person"), sizeof(filter));
-    strncat(filter, "=", sizeof(filter) - strlen(filter) - 1);
-    strncat(filter, x509_info->uid, sizeof(filter) - strlen(filter) - 1);
+    strncpy(filter, cfg_getstr(cfg, "ldap_attr_rdn_person"), sizeof filter);
+    strncat(filter, "=", sizeof filter - strlen(filter) - 1);
+    strncat(filter, x509_info->uid, sizeof filter - strlen(filter) - 1);
 
-    char *attrs[] = { cfg_getstr(cfg, "ldap_attr_cert"), cfg_getstr(cfg, "ldap_attr_access"), '\0' };
+    char *attrs[] = { cfg_getstr(cfg, "ldap_attr_cert"), cfg_getstr(cfg, "ldap_attr_access"), NULL };
     struct timeval search_timeout = { cfg_getint(cfg, "ldap_search_timeout"), 0 };
     int sizelimit = 1;
     LDAPMessage *ldap_result = NULL;
@@ -313,7 +313,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
     init_and_parse_config(&cfg, cfg_file);
 
     /* initialize data transfer object */
-    struct pam_openssh_x509_info *x509_info = malloc(sizeof(struct pam_openssh_x509_info));
+    struct pam_openssh_x509_info *x509_info = malloc(sizeof *x509_info);
     if (x509_info == NULL) {
         FATAL("malloc()");
     }

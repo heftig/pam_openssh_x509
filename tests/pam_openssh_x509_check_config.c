@@ -24,7 +24,7 @@
 
 #include "../src/pam_openssh_x509_config.c"
 
-static char *_test_init_and_parse_config_exit_lt[] =
+static char *test_init_and_parse_config_exit_lt[] =
 {
     CONFIGSDIR "/cfg_str_to_int_parser_libldap_ldap_scope_negative_0.conf",
     CONFIGSDIR "/cfg_str_to_int_parser_libldap_ldap_scope_negative_1.conf",
@@ -40,7 +40,7 @@ static char *_test_init_and_parse_config_exit_lt[] =
     CONFIGSDIR "/cfg_validate_cacerts_dir_negative_2.conf",
 };
 
-static char *_test_init_and_parse_config_lt[] =
+static char *test_init_and_parse_config_lt[] =
 {
     CONFIGSDIR "/valid.conf",
 };
@@ -48,7 +48,7 @@ static char *_test_init_and_parse_config_lt[] =
 START_TEST
 (test_init_and_parse_config_exit)
 {
-    char *config_file = _test_init_and_parse_config_exit_lt[_i];
+    char *config_file = test_init_and_parse_config_exit_lt[_i];
 
     if(!is_readable_file(config_file)) {
         ck_abort_msg("is_readable_file() returned false (%s)", config_file);
@@ -61,7 +61,7 @@ END_TEST
 START_TEST
 (test_init_and_parse_config)
 {
-    char *config_file = _test_init_and_parse_config_lt[_i];
+    char *config_file = test_init_and_parse_config_lt[_i];
 
     if(!is_readable_file(config_file)) {
         ck_abort_msg("is_readable_file() returned false (%s)", config_file);
@@ -293,9 +293,9 @@ make_config_suite(void)
     suite_add_tcase(s, tc_callbacks);
 
     /* main test cases */
-    int length_iapce_lt = sizeof(_test_init_and_parse_config_exit_lt) / sizeof(char *);
+    int length_iapce_lt = sizeof test_init_and_parse_config_exit_lt / sizeof test_init_and_parse_config_exit_lt[0];
     tcase_add_loop_exit_test(tc_main, test_init_and_parse_config_exit, EXIT_FAILURE, 0, length_iapce_lt);
-    int length_iapc_lt = sizeof(_test_init_and_parse_config_lt) / sizeof(char *);
+    int length_iapc_lt = sizeof test_init_and_parse_config_lt / sizeof test_init_and_parse_config_lt[0];
     tcase_add_loop_test(tc_main, test_init_and_parse_config, 0, length_iapc_lt);
 
     tcase_add_exit_test(tc_main, release_config_exit_cfg_NULL, EXIT_FAILURE);

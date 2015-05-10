@@ -21,7 +21,7 @@
 #include <check.h>
 
 /* type declarations */
-struct test_substitute_token {
+struct pox509_test_substitute_token_item {
     char token;
     char *subst;
     char *src;
@@ -29,13 +29,13 @@ struct test_substitute_token {
     char *exp_result;
 };
 
-struct test_check_access_permission {
+struct pox509_test_check_access_permission_item {
     char *group_dn;
     char *identifier;
     char exp_result;
 };
 
-struct test_validate_x509 {
+struct pox509_test_validate_x509_item {
     char *file;
     char exp_result;
 };

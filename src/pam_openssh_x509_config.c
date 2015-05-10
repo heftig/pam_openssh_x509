@@ -33,7 +33,7 @@ cfg_error_handler(cfg_t *cfg, const char *fmt, va_list ap)
     }
 
     char error_msg[ERROR_MSG_BUFFER_SIZE];
-    vsnprintf(error_msg, sizeof(error_msg), fmt, ap);
+    vsnprintf(error_msg, sizeof error_msg, fmt, ap);
     FATAL("%s", error_msg);
 }
 

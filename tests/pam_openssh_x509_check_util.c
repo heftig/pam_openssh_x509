@@ -29,7 +29,7 @@
 
 #define BUFFER_SIZE 2048
 
-static struct test_substitute_token _test_substitute_token_lt[] =
+static struct pox509_test_substitute_token_item test_substitute_token_lt[] =
     {
         { 'u', "foo", "/home/%u/", 1024, "/home/foo/" },
         { 'u', "foo", "/home/%u/", 3, "/h" },
@@ -52,7 +52,7 @@ static struct test_substitute_token _test_substitute_token_lt[] =
         { 'u', "foo", "/home/%u/", 2, "/" },
     };
 
-static struct test_check_access_permission _test_check_access_permission_lt[] =
+static struct pox509_test_check_access_permission_item test_check_access_permission_lt[] =
     {
         { "cn=blub,dc=abc,dc=afg", "blub", 1 },
         { "cn==blub,dc=abc,dc=afg", "=blub", 1 },
@@ -66,7 +66,7 @@ static struct test_check_access_permission _test_check_access_permission_lt[] =
         { "=a,", "a", 0 },
     };
 
-static struct test_validate_x509 _test_validate_x509_lt[] =
+static struct pox509_test_validate_x509_item _test_validate_x509_lt[] =
     {
         { X509CERTSDIR "/not_trusted_ca.pem", 0 },
         { X509CERTSDIR "/trusted_ca_but_expired.pem", 0 },
@@ -159,7 +159,7 @@ START_TEST
     }
 
     char line_buffer[BUFFER_SIZE];
-    while (fgets(line_buffer, sizeof(line_buffer), fh_oneliner) != NULL) {
+    while (fgets(line_buffer, sizeof line_buffer, fh_oneliner) != NULL) {
         char *pem_file_rel = strtok(line_buffer, ":");
         char *ssh_rsa = strtok(NULL, "\n");
         if (pem_file_rel == NULL || ssh_rsa == NULL) {
@@ -167,9 +167,9 @@ START_TEST
         }
 
         char pem_file_abs[BUFFER_SIZE];
-        strncpy(pem_file_abs, directory, sizeof(pem_file_abs));
-        strncat(pem_file_abs, "/", sizeof(pem_file_abs) - strlen(pem_file_abs) - 1);
-        strncat(pem_file_abs, pem_file_rel, sizeof(pem_file_abs) - strlen(pem_file_abs) - 1);
+        strncpy(pem_file_abs, directory, sizeof pem_file_abs);
+        strncat(pem_file_abs, "/", sizeof pem_file_abs - strlen(pem_file_abs) - 1);
+        strncat(pem_file_abs, pem_file_rel, sizeof pem_file_abs - strlen(pem_file_abs) - 1);
         FILE *f_pem_file = fopen(pem_file_abs, "r");
         if (f_pem_file == NULL) {
             ck_abort_msg("fopen() failed ('%s')", pem_file_abs);
@@ -183,9 +183,9 @@ START_TEST
         struct pam_openssh_x509_info x509_info;
         pkey_to_authorized_keys(pkey, &x509_info);
         char exp_ssh_rsa[BUFFER_SIZE];
-        strncpy(exp_ssh_rsa, x509_info.ssh_keytype, sizeof(exp_ssh_rsa));
-        strncat(exp_ssh_rsa, " ", sizeof(exp_ssh_rsa) - strlen(exp_ssh_rsa) - 1);
-        strncat(exp_ssh_rsa, x509_info.ssh_key, sizeof(exp_ssh_rsa) - strlen(exp_ssh_rsa) - 1);
+        strncpy(exp_ssh_rsa, x509_info.ssh_keytype, sizeof exp_ssh_rsa);
+        strncat(exp_ssh_rsa, " ", sizeof exp_ssh_rsa - strlen(exp_ssh_rsa) - 1);
+        strncat(exp_ssh_rsa, x509_info.ssh_key, sizeof exp_ssh_rsa - strlen(exp_ssh_rsa) - 1);
         ck_assert_str_eq(ssh_rsa, exp_ssh_rsa);
         fclose(f_pem_file);
     }
@@ -367,7 +367,7 @@ make_util_suite(void)
     tcase_add_exit_test(tc_helper, test_substitute_token_exit_src_NULL, EXIT_FAILURE);
     tcase_add_exit_test(tc_helper, test_substitute_token_exit_dst_NULL, EXIT_FAILURE);
     tcase_add_exit_test(tc_helper, test_substitute_token_exit_subst_src_dst_NULL, EXIT_FAILURE);
-    int length_pe_lt = sizeof(_test_substitute_token_lt) / sizeof(struct test_substitute_token);
+    int length_pe_lt = sizeof test_substitute_token_lt / sizeof test_substitute_token_lt[0];
     tcase_add_loop_test(tc_helper, test_substitute_token, 0, length_pe_lt);
 
     tcase_add_exit_test(tc_helper, test_config_lookup_exit_key_NULL, EXIT_FAILURE);
@@ -382,7 +382,7 @@ make_util_suite(void)
     tcase_add_exit_test(tc_helper, test_check_access_permission_exit_identifier_NULL, EXIT_FAILURE);
     tcase_add_exit_test(tc_helper, test_check_access_permission_exit_x509_info_NULL, EXIT_FAILURE);
     tcase_add_exit_test(tc_helper, test_check_access_permission_exit_group_dn_identifier_x509_info_NULL, EXIT_FAILURE);
-    int length_ca_lt = sizeof(_test_check_access_permission_lt) / sizeof(struct test_check_access_permission);
+    int length_ca_lt = sizeof test_check_access_permission_lt / sizeof test_check_access_permission_lt[0];
     tcase_add_loop_test(tc_helper, test_check_access_permission, 0, length_ca_lt);
 
     /* ssh test cases */
@@ -397,7 +397,7 @@ make_util_suite(void)
     tcase_add_exit_test(tc_x509, test_validate_x509_exit_cacerts_dir_NULL, EXIT_FAILURE);
     tcase_add_exit_test(tc_x509, test_validate_x509_exit_x509_info_NULL, EXIT_FAILURE);
     tcase_add_exit_test(tc_x509, test_validate_x509_exit_x509_cacerts_dir_x509_info_NULL, EXIT_FAILURE);
-    int length_validate_x509 = sizeof(_test_validate_x509_lt) / sizeof(struct test_validate_x509);
+    int length_validate_x509 = sizeof test_validate_x509_lt / sizeof test_validate_x509_lt[0];
     tcase_add_loop_test(tc_x509, test_validate_x509, 0, length_validate_x509);
 
     return s;
