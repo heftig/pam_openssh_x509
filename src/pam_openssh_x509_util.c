@@ -82,14 +82,18 @@ config_lookup(const enum pox509_sections sec, const char *key)
         FATAL("config_lookup(): key == NULL");
     }
 
-    if (sec == SYSLOG || sec == LIBLDAP) {
-        struct pox509_config_lt_item *lookup_ptr = NULL;
-        for (lookup_ptr = config_lt[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
-            if (strcasecmp(lookup_ptr->name, key) == 0) {
-                return lookup_ptr->value;
-            }
+    if (sec != SYSLOG && sec != LIBLDAP) {
+        goto ret_no_value;
+    }
+
+    struct pox509_config_lt_item *lookup_ptr = NULL;
+    for (lookup_ptr = config_lt[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
+        if (strcasecmp(lookup_ptr->name, key) == 0) {
+            return lookup_ptr->value;
         }
     }
+
+ret_no_value:
     return -EINVAL;
 }
 
@@ -237,13 +241,13 @@ init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
  *
  */
 void
-substitute_token(char token, char *subst, char *src, char *dst, int dst_length)
+substitute_token(char token, char *subst, char *src, char *dst, size_t dst_length)
 {
     if (subst == NULL || src == NULL || dst == NULL) {
         FATAL("substitute_token(): subst, src or dst == NULL");
     }
 
-    if (dst_length < 1) {
+    if (dst_length == 0) {
         return;
     }
 
@@ -271,6 +275,23 @@ substitute_token(char token, char *subst, char *src, char *dst, int dst_length)
         dst[j++] = src[i];
     }
     dst[j] = '\0';
+}
+
+void
+create_ldap_search_filter(char *rdn, char *uid, char *dst, size_t dst_length)
+{
+    if (rdn == NULL || uid == NULL || dst == NULL) {
+        FATAL("create_ldap_search_filter(): rdn, uid or dst == NULL");
+    }
+
+    if (dst_length == 0) {
+        return;
+    }
+
+    dst[dst_length - 1] = '\0';
+    strncpy(dst, rdn, dst_length - 1);
+    strncat(dst, "=", dst_length - 1 - strlen(dst));
+    strncat(dst, uid, dst_length - 1 - strlen(dst));
 }
 
 void

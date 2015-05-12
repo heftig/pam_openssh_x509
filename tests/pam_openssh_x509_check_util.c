@@ -46,10 +46,21 @@ static struct pox509_test_substitute_token_item test_substitute_token_lt[] =
         { 'u', "foo", "/home/%u/", 8, "/home/%" },
         { 'u', "foo", "/home/%u/", 9, "/home/fo" },
         { 'u', "foo", "/home/%u/", 10, "/home/foo" },
-        { 'u', "foo", "/home/%u/", -1, "1.FC KOELN" },
         { 'u', "foo", "/home/%u/", 0, "1.FC KOELN" },
         { 'u', "foo", "/home/%u/", 1, "" },
         { 'u', "foo", "/home/%u/", 2, "/" },
+    };
+
+static struct pox509_test_create_ldap_search_filter_item test_create_ldap_search_filter_lt[] =
+    {
+        { "uid", "foo", 8, "uid=foo" },
+        { "uid", "foo", 7, "uid=fo" },
+        { "uid", "foo", 100, "uid=foo" },
+        { "uid", "foo", 0, "1.FC KOELN" },
+        { "uid", "foo", 1, "" },
+        { "uid", "foo", 2, "u" },
+        { "uid", "foo", 5, "uid=" },
+        { "uid", "foo", 6, "uid=f" },
     };
 
 static struct pox509_test_check_access_permission_item test_check_access_permission_lt[] =
@@ -111,13 +122,29 @@ START_TEST
     char token = test_substitute_token_lt[_i].token;
     char *subst = test_substitute_token_lt[_i].subst;
     char *src = test_substitute_token_lt[_i].src;
-    int dst_length = test_substitute_token_lt[_i].dst_length;
+    size_t dst_length = test_substitute_token_lt[_i].dst_length;
     char *exp_result = test_substitute_token_lt[_i].exp_result;
 
-    int dst_buffer_length = 1024;
+    size_t dst_buffer_length = 1024;
     char dst[dst_buffer_length];
     strncpy(dst, "1.FC KOELN", dst_buffer_length);
     substitute_token(token, subst, src, dst, dst_length);
+    ck_assert_str_eq(dst, exp_result);
+}
+END_TEST
+
+START_TEST
+(test_create_ldap_search_filter)
+{
+    char *rdn = test_create_ldap_search_filter_lt[_i].rdn;
+    char *uid = test_create_ldap_search_filter_lt[_i].uid;
+    size_t dst_length = test_create_ldap_search_filter_lt[_i].dst_length;
+    char *exp_result = test_create_ldap_search_filter_lt[_i].exp_result;
+
+    size_t dst_buffer_length = 1024;
+    char dst[dst_buffer_length];
+    strncpy(dst, "1.FC KOELN", dst_buffer_length);
+    create_ldap_search_filter(rdn, uid, dst, dst_length);
     ck_assert_str_eq(dst, exp_result);
 }
 END_TEST
@@ -369,6 +396,9 @@ make_util_suite(void)
     tcase_add_exit_test(tc_helper, test_substitute_token_exit_subst_src_dst_NULL, EXIT_FAILURE);
     int length_pe_lt = sizeof test_substitute_token_lt / sizeof test_substitute_token_lt[0];
     tcase_add_loop_test(tc_helper, test_substitute_token, 0, length_pe_lt);
+
+    int length_clsf_lt = sizeof test_create_ldap_search_filter_lt / sizeof test_create_ldap_search_filter_lt[0];
+    tcase_add_loop_test(tc_helper, test_create_ldap_search_filter, 0, length_clsf_lt);
 
     tcase_add_exit_test(tc_helper, test_config_lookup_exit_key_NULL, EXIT_FAILURE);
     tcase_add_test(tc_helper, test_config_lookup);

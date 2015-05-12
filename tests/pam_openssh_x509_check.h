@@ -25,7 +25,14 @@ struct pox509_test_substitute_token_item {
     char token;
     char *subst;
     char *src;
-    unsigned int dst_length;
+    size_t dst_length;
+    char *exp_result;
+};
+
+struct pox509_test_create_ldap_search_filter_item {
+    char *rdn;
+    char *uid;
+    size_t dst_length;
     char *exp_result;
 };
 

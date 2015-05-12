@@ -18,6 +18,7 @@
 #ifndef PAM_OPENSSH_X509_UTIL_H
 #define PAM_OPENSSH_X509_UTIL_H
 
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <openssl/x509.h>
@@ -41,7 +42,8 @@ enum pox509_sections { SYSLOG, LIBLDAP };
 int is_readable_file(const char *file);
 long int config_lookup(const enum pox509_sections sec, const char *key);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
-void substitute_token(char token, char *subst, char *src, char *dst, int dst_length);
+void substitute_token(char token, char *subst, char *src, char *dst, size_t dst_length);
+void create_ldap_search_filter(char *rdn, char *uid, char *dst, size_t dst_length);
 void check_access_permission(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info);
 void validate_x509(X509 *x509, char *cacerts_dir, struct pam_openssh_x509_info *x509_info);
 void pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info);

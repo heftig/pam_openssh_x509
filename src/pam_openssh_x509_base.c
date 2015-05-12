@@ -149,26 +149,23 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
     LOG_SUCCESS("ldap_sasl_bind_s()");
     x509_info->directory_online = 1;
 
-    /* search people tree for given uid and retrieve group memberships / x509 certificates */
-
     /* construct search filter */
     char filter[LDAP_SEARCH_FILTER_BUFFER_SIZE];
-    strncpy(filter, cfg_getstr(cfg, "ldap_attr_rdn_person"), sizeof filter);
-    strncat(filter, "=", sizeof filter - strlen(filter) - 1);
-    strncat(filter, x509_info->uid, sizeof filter - strlen(filter) - 1);
+    create_ldap_search_filter(cfg_getstr(cfg, "ldap_attr_rdn_person"), x509_info->uid, filter, sizeof filter);
 
     char *attrs[] = { cfg_getstr(cfg, "ldap_attr_cert"), cfg_getstr(cfg, "ldap_attr_access"), NULL };
     struct timeval search_timeout = { cfg_getint(cfg, "ldap_search_timeout"), 0 };
     int sizelimit = 1;
     LDAPMessage *ldap_result = NULL;
 
+    /* search people tree for given uid and retrieve group memberships / x509 certificates */
     rc = ldap_search_ext_s(ldap_handle, cfg_getstr(cfg, "ldap_base"), cfg_getint(cfg, "ldap_scope"), filter, attrs, 0, NULL, NULL, &search_timeout, sizelimit, &ldap_result);
     if (rc != LDAP_SUCCESS) {
         LOG_FAIL("ldap_search_ext_s(): '%s' (%d)", ldap_err2string(rc), rc);
         goto unbind_and_free_handle;
     }
-    LOG_SUCCESS("ldap_search_ext_s()");
 
+    LOG_SUCCESS("ldap_search_ext_s()");
     /*
      * iterate over matching entries
      *
