@@ -167,7 +167,6 @@ is_readable_file(const char *file)
     }
 
     struct stat stat_buffer;
-
     int rc = stat(file, &stat_buffer);
     if (rc != 0) {
         goto ret_false;

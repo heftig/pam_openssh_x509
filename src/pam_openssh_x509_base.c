@@ -128,8 +128,12 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
         rc = ldap_start_tls_s(ldap_handle, NULL, NULL);
         if (rc != LDAP_SUCCESS) {
             char *msg = NULL;
-            ldap_get_option(ldap_handle, LDAP_OPT_DIAGNOSTIC_MESSAGE, &msg);
-            FATAL("ldap_start_tls_s(): '%s - %s' (%d)", ldap_err2string(rc), msg, rc);
+            rc = ldap_get_option(ldap_handle, LDAP_OPT_DIAGNOSTIC_MESSAGE, &msg);
+            if (rc == LDAP_OPT_SUCCESS) {
+                FATAL("ldap_start_tls_s(): '%s - %s' (%d)", ldap_err2string(rc), msg, rc);
+            } else {
+                FATAL("ldap_start_tls_s(): '%s (%d)", ldap_err2string(rc), rc);
+            }
         }
     }
 
