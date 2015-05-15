@@ -488,25 +488,22 @@ pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
 
         case EVP_PKEY_DSA:
             {
-                LOG_MSG("dsa...");
-                break;
+                FATAL("DSA is not supported yet");
             }
 
         case EVP_PKEY_DH:
             {
-                LOG_MSG("dh...");
-                break;
+                FATAL("DH is not supported yet");
             }
 
         case EVP_PKEY_EC:
             {
-                LOG_MSG("ec...");
-                break;
+                FATAL("EC is not supported yet");
             }
 
         default:
             {
-                LOG_FAIL("unsupported public key type (%i)", pkey->type);
+                FATAL("unsupported public key type (%i)", pkey->type);
             }
     }
 }
