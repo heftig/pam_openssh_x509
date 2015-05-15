@@ -35,7 +35,7 @@
 #include "pam_openssh_x509_util.h"
 
 #define LDAP_SEARCH_FILTER_BUFFER_SIZE      512
-#define UID_BUFFER_SIZE                     33
+#define MAX_UID_LENGTH                      32
 #define AUTHORIZED_KEYS_FILE_BUFFER_SIZE    1024
 
 static void
@@ -343,7 +343,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
      * pam space because if we free our data structure we would free it from
      * global pam space as well. other modules could rely on it
      */
-    x509_info->uid = strndup(uid, UID_BUFFER_SIZE);
+    x509_info->uid = strndup(uid, MAX_UID_LENGTH);
     if (x509_info->uid == NULL) {
         FATAL("strndup()");
     }
