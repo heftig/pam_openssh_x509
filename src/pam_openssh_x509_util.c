@@ -152,11 +152,12 @@ set_log_facility(const char *lf_in)
     }
 
     long int value = config_lookup(SYSLOG, lf_in);
-    if (value != -EINVAL) {
-        log_facility = value;
-        return 0;
+    if (value == -EINVAL) {
+        return -EINVAL;
     }
-    return -EINVAL;
+
+    log_facility = value;
+    return 0;
 }
 
 int
@@ -409,7 +410,6 @@ pkey_to_authorized_keys(EVP_PKEY *pkey, struct pam_openssh_x509_info *x509_info)
                  */
                 int pre_length_blob = 4 + length_keytype + 4 + 1 + length_exponent + 4 + 1 + length_modulus;
 
-                /* TODO: SET LIMIT FOR LENGTH OF BLOB TO AVOID STACK OVERFLOW */
                 unsigned char blob[pre_length_blob];
                 unsigned char blob_buffer[pre_length_blob];
 
