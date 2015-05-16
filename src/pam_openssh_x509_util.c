@@ -182,7 +182,6 @@ is_readable_file(const char *file)
     if (rc != 0) {
         goto ret_false;
     }
-
     return 1;
 
 ret_false:
@@ -204,14 +203,14 @@ is_valid_uid(const char *uid)
     rc = regexec(&regex_uid, uid, 0, NULL, 0);
     regfree(&regex_uid);
 
-    if (rc == 0) {
-        return 1;
-    } else if (rc == REG_NOMATCH) {
-        return 0;
-    } else {
-        FATAL("regex match failed\n");
-        /* this can never be reached but keeps the compiler calm... */
-        return 0x56;
+    switch (rc) {
+        case 0:
+            return 1;
+        case REG_ESPACE:
+            FATAL("regexec(): out of memory\n");
+        case REG_NOMATCH:
+        default:
+            return 0;
     }
 }
 

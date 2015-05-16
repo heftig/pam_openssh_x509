@@ -345,7 +345,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
      * against a restrictive regular expression
      */
     if (!is_valid_uid(uid)) {
-        FATAL("is_valid_uid(): uid: %s", uid);
+        FATAL("is_valid_uid(): uid: '%s'", uid);
     }
 
     /*
