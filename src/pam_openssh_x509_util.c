@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <regex.h>
 
 struct pox509_config_lt_item {
     char *name;
@@ -186,6 +187,32 @@ is_readable_file(const char *file)
 
 ret_false:
     return 0;
+}
+
+int
+is_valid_uid(const char *uid)
+{
+    if (uid == NULL) {
+        FATAL("is_valid_uid(): uid == NULL");
+    }
+
+    regex_t regex_uid;
+    int rc = regcomp(&regex_uid, REGEX_PATTERN_UID, REG_NOSUB);
+    if (rc != 0) {
+        FATAL("could not compile regex\n");
+    }
+    rc = regexec(&regex_uid, uid, 0, NULL, 0);
+    regfree(&regex_uid);
+
+    if (rc == 0) {
+        return 1;
+    } else if (rc == REG_NOMATCH) {
+        return 0;
+    } else {
+        FATAL("regex match failed\n");
+        /* this can never be reached but keeps the compiler calm... */
+        return 0x56;
+    }
 }
 
 static int

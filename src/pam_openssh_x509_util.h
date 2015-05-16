@@ -28,6 +28,7 @@
 #define DEFAULT_LOG_FACILITY LOG_LOCAL1
 #define LOG_BUFFER_SIZE 2048
 #define GROUP_DN_BUFFER_SIZE 1024
+#define REGEX_PATTERN_UID "^[a-z][-a-z0-9]\\{0,31\\}$"
 
 #define PUT_32BIT(cp, value)( \
     (cp)[0] = (unsigned char)((value) >> 24), \
@@ -40,6 +41,7 @@ enum pox509_sections { SYSLOG, LIBLDAP };
 
 /* function declarations */
 int is_readable_file(const char *file);
+int is_valid_uid(const char *uid);
 long int config_lookup(const enum pox509_sections sec, const char *key);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
 void substitute_token(char token, char *subst, char *src, char *dst, size_t dst_length);

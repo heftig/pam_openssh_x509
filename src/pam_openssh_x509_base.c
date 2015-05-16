@@ -339,6 +339,16 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
         FATAL("pam_get_user(): (%i)", rc);
     }
     /*
+     * an attacker could provide a malicious uid (e.g. '../keystore/foo') that
+     * can cause problems with the resulting authorized_keys path after token
+     * substitution. to minimize this attack vector the given uid will be tested
+     * against a restrictive regular expression
+     */
+    if (!is_valid_uid(uid)) {
+        FATAL("is_valid_uid(): uid: %s", uid);
+    }
+
+    /*
      * make uid available in data transfer object. do not point to value in
      * pam space because if we free our data structure we would free it from
      * global pam space as well. other modules could rely on it
