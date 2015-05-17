@@ -29,7 +29,7 @@
 
 #include "pam_openssh_x509_util.h"
 
-#define LDAP_SEARCH_FILTER_BUFFER_SIZE  512
+#define LDAP_SEARCH_FILTER_BUFFER_SIZE 512
 
 void
 retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x509_info *x509_info, X509 **x509)
@@ -202,7 +202,7 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
             case LDAP_RES_SEARCH_REFERENCE:
                 {
                     /* TODO: handle references here */
-                    LOG_FAIL("unhandled msgtype '(0x%x)'\n", msgtype);
+                    LOG_FAIL("unhandled msgtype '(0x%x)'", msgtype);
                     break;
                 }
 
@@ -226,7 +226,7 @@ retrieve_access_permission_and_x509_from_ldap(cfg_t *cfg, struct pam_openssh_x50
             default:
                 {
                     /* unlikely */
-                    LOG_FAIL("undefined msgtype '(0x%x)'\n", msgtype);
+                    LOG_FAIL("undefined msgtype '(0x%x)'", msgtype);
                 }
         }
     }

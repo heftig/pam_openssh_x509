@@ -28,6 +28,8 @@
 
 #include "pam_openssh_x509_util.h"
 
+#define ERROR_MSG_BUFFER_SIZE 1024
+
 static void
 cfg_error_handler(cfg_t *cfg, const char *fmt, va_list ap)
 {

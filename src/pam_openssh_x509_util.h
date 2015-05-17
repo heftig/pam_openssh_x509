@@ -26,17 +26,6 @@
 
 #include "pam_openssh_x509.h"
 
-#define DEFAULT_LOG_FACILITY LOG_LOCAL1
-#define LOG_BUFFER_SIZE 2048
-#define GROUP_DN_BUFFER_SIZE 1024
-#define REGEX_PATTERN_UID "^[a-z][-a-z0-9]\\{0,31\\}$"
-
-#define PUT_32BIT(cp, value)( \
-    (cp)[0] = (unsigned char)((value) >> 24), \
-    (cp)[1] = (unsigned char)((value) >> 16), \
-    (cp)[2] = (unsigned char)((value) >> 8), \
-    (cp)[3] = (unsigned char)(value) )
-
 /* type declarations */
 enum pox509_sections { SYSLOG, LIBLDAP };
 

@@ -38,6 +38,17 @@
 #include <openssl/x509v3.h>
 #include <openssl/x509_vfy.h>
 
+#define DEFAULT_LOG_FACILITY LOG_LOCAL1
+#define LOG_BUFFER_SIZE 2048
+#define GROUP_DN_BUFFER_SIZE 1024
+#define REGEX_PATTERN_UID "^[a-z][-a-z0-9]\\{0,31\\}$"
+
+#define PUT_32BIT(cp, value)( \
+    (cp)[0] = (unsigned char)((value) >> 24), \
+    (cp)[1] = (unsigned char)((value) >> 16), \
+    (cp)[2] = (unsigned char)((value) >> 8), \
+    (cp)[3] = (unsigned char)(value) )
+
 struct pox509_config_lt_item {
     char *name;
     int value;
@@ -210,7 +221,7 @@ is_valid_uid(const char *uid)
     regex_t regex_uid;
     int rc = regcomp(&regex_uid, REGEX_PATTERN_UID, REG_NOSUB);
     if (rc != 0) {
-        FATAL("could not compile regex\n");
+        FATAL("could not compile regex");
     }
     rc = regexec(&regex_uid, uid, 0, NULL, 0);
     regfree(&regex_uid);
@@ -219,7 +230,7 @@ is_valid_uid(const char *uid)
         case 0:
             return 1;
         case REG_ESPACE:
-            FATAL("regexec(): out of memory\n");
+            FATAL("regexec(): out of memory");
         case REG_NOMATCH:
         default:
             return 0;

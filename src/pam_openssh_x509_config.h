@@ -20,8 +20,6 @@
 
 #include <confuse.h>
 
-#define ERROR_MSG_BUFFER_SIZE 1024
-
 /* type declarations */
 
 /* function declarations */
