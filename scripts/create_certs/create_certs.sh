@@ -77,7 +77,7 @@ create_keystore_openssl()
     # create csr
     ${OPENSSL} req -new -keyout ${ROOT}/ca/10-ee_${cert_type}_${index}_key.pem -out ${ROOT}/ca/csr/10-ee_${cert_type}_${index}_cert.csr -subj "/CN=10-ee_${cert_type}_${index}${SUBJECT_POSTFIX}" -config ${openssl_conf} &> /dev/null
     # sign request
-    ${OPENSSL} ca -name ca_int_${cert_type} -in ${ROOT}/ca/csr/10-ee_${cert_type}_${index}_cert.csr -out ${ROOT}/ca/10-ee_${cert_type}_${index}_cert.pem -config ${openssl_conf} &> /dev/null << EOF
+    ${OPENSSL} ca -name ca_int_${cert_type} -in ${ROOT}/ca/csr/10-ee_${cert_type}_${index}_cert.csr -out ${ROOT}/ca/10-ee_${cert_type}_${index}_cert.pem -notext -config ${openssl_conf} &> /dev/null << EOF
 y
 y
 EOF
@@ -207,15 +207,15 @@ case "${arg1}" in
             ${OPENSSL} req -new -keyout ${ROOT}/ca/01-ca_int_email_key.pem -out ${ROOT}/ca/csr/01-ca_int_email_cert.csr -subj "/CN=01-ca_int_email${SUBJECT_POSTFIX}" -config ${openssl_conf} &> /dev/null
             ${OPENSSL} req -new -keyout ${ROOT}/ca/01-ca_int_user_key.pem -out ${ROOT}/ca/csr/01-ca_int_user_cert.csr -subj "/CN=01-ca_int_user${SUBJECT_POSTFIX}" -config ${openssl_conf} &> /dev/null
             # sign requests
-            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_server_cert.csr -out ${ROOT}/ca/01-ca_int_server_cert.pem -extensions ca_extension -config ${openssl_conf} &> /dev/null << EOF
+            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_server_cert.csr -out ${ROOT}/ca/01-ca_int_server_cert.pem -extensions ca_extension -notext -config ${openssl_conf} &> /dev/null << EOF
 y
 y
 EOF
-            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_email_cert.csr -out ${ROOT}/ca/01-ca_int_email_cert.pem -extensions ca_extension -config ${openssl_conf} &> /dev/null << EOF
+            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_email_cert.csr -out ${ROOT}/ca/01-ca_int_email_cert.pem -extensions ca_extension -notext -config ${openssl_conf} &> /dev/null << EOF
 y
 y
 EOF
-            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_user_cert.csr -out ${ROOT}/ca/01-ca_int_user_cert.pem -extensions ca_extension -config ${openssl_conf} &> /dev/null << EOF
+            ${OPENSSL} ca -in ${ROOT}/ca/csr/01-ca_int_user_cert.csr -out ${ROOT}/ca/01-ca_int_user_cert.pem -extensions ca_extension -notext -config ${openssl_conf} &> /dev/null << EOF
 y
 y
 EOF
@@ -225,7 +225,7 @@ EOF
             # create csr
             ${OPENSSL} req -new -keyout ${ROOT}/ca/02-ee_server_sscep_key.pem -out ${ROOT}/ca/csr/02-ee_server_sscep_cert.csr -subj "/CN=02-ee_server_sscep${SUBJECT_POSTFIX}" -config ${openssl_conf} &> /dev/null
             # sign request
-            ${OPENSSL} ca -name ca_int_server -in ${ROOT}/ca/csr/02-ee_server_sscep_cert.csr -out ${ROOT}/ca/02-ee_server_sscep_cert.pem -config ${openssl_conf} &> /dev/null << EOF
+            ${OPENSSL} ca -name ca_int_server -in ${ROOT}/ca/csr/02-ee_server_sscep_cert.csr -out ${ROOT}/ca/02-ee_server_sscep_cert.pem -notext -config ${openssl_conf} &> /dev/null << EOF
 y
 y
 EOF
