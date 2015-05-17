@@ -84,6 +84,19 @@ static struct pox509_test_validate_x509_item test_validate_x509_lt[] =
         { X509CERTSDIR "/trusted_and_not_expired.pem", 1 },
     };
 
+static struct pox509_is_valid_uid_item test_is_valid_uid_lt[] =
+    {
+        { "pox509-test-user", 1 },
+        { "Pox509-test-user", 0 },
+        { "pox509_test-user", 0 },
+        { "1pox509", 0 },
+        { "abcdefghijklmnopqrstuvwxyzaabbcc", 1 },
+        { "abcdefghijklmnopqrstuvwxyzaabbccd", 0 },
+        { "../keystore/foo", 0 },
+        { "..", 0 },
+        { "_foo", 0 },
+    };
+
 START_TEST
 (test_substitute_token_exit_subst_NULL)
 {
@@ -314,6 +327,24 @@ START_TEST
 END_TEST
 
 START_TEST
+(test_is_valid_uid_exit_uid_NULL)
+{
+    is_valid_uid(NULL);
+}
+END_TEST
+
+START_TEST
+(test_is_valid_uid)
+{
+    char *uid = test_is_valid_uid_lt[_i].uid;
+    char exp_result = test_is_valid_uid_lt[_i].exp_result;
+
+    int rc = is_valid_uid(uid);
+    ck_assert_int_eq(rc, exp_result);
+}
+END_TEST
+
+START_TEST
 (test_validate_x509_exit_x509_NULL)
 {
     char *ca_certs_dir = CACERTSDIR;
@@ -414,6 +445,10 @@ make_util_suite(void)
     tcase_add_exit_test(tc_helper, test_check_access_permission_exit_group_dn_identifier_x509_info_NULL, EXIT_FAILURE);
     int length_ca_lt = sizeof test_check_access_permission_lt / sizeof test_check_access_permission_lt[0];
     tcase_add_loop_test(tc_helper, test_check_access_permission, 0, length_ca_lt);
+
+    tcase_add_exit_test(tc_helper, test_is_valid_uid_exit_uid_NULL, EXIT_FAILURE);
+    int length_ivu_lt = sizeof test_is_valid_uid_lt / sizeof test_is_valid_uid_lt[0];
+    tcase_add_loop_test(tc_helper, test_is_valid_uid, 0, length_ivu_lt);
 
     /* ssh test cases */
     tcase_add_exit_test(tc_ssh, test_pkey_to_authorized_keys_exit_pkey_NULL, EXIT_FAILURE);
