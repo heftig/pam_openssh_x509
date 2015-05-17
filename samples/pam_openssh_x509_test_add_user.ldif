@@ -1,12 +1,12 @@
-dn: uid=pam_openssh_x509_test_user,ou=people,dc=ssh,dc=hq
+dn: uid=pox509-test-user,ou=people,dc=ssh,dc=hq
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
 objectClass: inetOrgPerson
-uid: pam_openssh_x509_test_user
-givenName: pam_openssh_x509_test_user
-sn: pam_openssh_x509_test_user
-cn: pam_openssh_x509_test_user
+uid: pox509-test-user
+givenName: pox509-test-user
+sn: pox509-test-user
+cn: pox509-test-user
 userCertificate;binary:: 
  MIIC+DCCAeACAQUwDQYJKoZIhvcNAQEEBQAwQjEXMBUGA1UEAwwOMDEtY2FfaW50
  X3VzZXIxEzARBgoJkiaJk/IsZAEZFgNzc2gxEjAQBgoJkiaJk/IsZAEZFgJocTAg

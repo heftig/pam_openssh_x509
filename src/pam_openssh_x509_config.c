@@ -160,7 +160,7 @@ init_and_parse_config(cfg_t **cfg, const char *cfg_file)
         CFG_STR("ldap_attr_rdn_person", "uid", CFGF_NONE),
         CFG_STR("ldap_attr_access", "memberOf", CFGF_NONE),
         CFG_STR("ldap_attr_cert", "userCertificate;binary", CFGF_NONE),
-        CFG_STR("ldap_group_identifier", "pam_openssh_x509_test_server", CFGF_NONE),
+        CFG_STR("ldap_group_identifier", "pox509-test-server", CFGF_NONE),
         CFG_STR("authorized_keys_file", "/usr/local/etc/ssh/keystore/%u/authorized_keys", CFGF_NONE),
         CFG_STR("cacerts_dir", "/usr/local/etc/ssh/cacerts", CFGF_NONE),
         CFG_END()

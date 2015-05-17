@@ -45,7 +45,7 @@ Solution stack
 Prerequisites
 -------------
 
-Make sure there is a local user 'pam_openssh_x509_test_user'
+Make sure there is a local user 'pox509-test-user'
 
 
 syslog-ng
@@ -80,8 +80,8 @@ $ mkdir /usr/local/etc/ssh/keystore
 In this directory every user gets a subdirectory named after his uid and
 the authorized_keys file will be stored there
 
-5) Create keystore for 'pam_openssh_x509_test_user'
-$ mkdir /usr/local/etc/ssh/keystore/pam_openssh_x509_test_user
+5) Create keystore for 'pox509-test-user'
+$ mkdir /usr/local/etc/ssh/keystore/pox509-test-user
 
 /!\ As the authorized_keys file will be managed by pam_openssh_x509 we have
 to make sure that noone expect root can change the authorized_keys file.
@@ -123,13 +123,13 @@ dn: ou=people,dc=ssh,dc=hq
 The groups tree will hold objects that represent the OpenSSH servers whereas the person
 tree holds the person objects including their x509 certificates.
 
-6) Add user 'pam_openssh_x509_test_user' with x509 certificate to person tree
+6) Add user 'pox509-test-user' with x509 certificate to person tree
 $ ldapadd -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -f samples/pam_openssh_x509_test_add_user.ldif
 
-7) Add OpenSSH server with identifier 'pam_openssh_x509_test_server' to groups tree
+7) Add OpenSSH server with identifier 'pox509-test-server' to groups tree
 $ ldapadd -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -f samples/pam_openssh_x509_test_add_server.ldif
 
-8) Grant user 'pam_openssh_x509_test_user' access to OpenSSH server with the identifier 'pam_openssh_x509_test_server'
+8) Grant user 'pox509-test-user' access to OpenSSH server with the identifier 'pox509-test-server'
 $ ldapmodify -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -f samples/pam_openssh_x509_test_authorize_user.ldif
 
 9) Check LDAP content
@@ -151,15 +151,15 @@ objectClass: top
 objectClass: organizationalUnit
 ou: groups
 
-dn: uid=pam_openssh_x509_test_user,ou=people,dc=ssh,dc=hq
+dn: uid=pox509-test-user,ou=people,dc=ssh,dc=hq
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
 objectClass: inetOrgPerson
-uid: pam_openssh_x509_test_user
-givenName: pam_openssh_x509_test_user
-sn: pam_openssh_x509_test_user
-cn: pam_openssh_x509_test_user
+uid: pox509-test-user
+givenName: pox509-test-user
+sn: pox509-test-user
+cn: pox509-test-user
 userCertificate;binary:: MIIC+DCCAeACAQUwDQYJKoZIhvcNAQEEBQAwQjEXMBUGA1UEAwwOM
  DEtY2FfaW50X3VzZXIxEzARBgoJkiaJk/IsZAEZFgNzc2gxEjAQBgoJkiaJk/IsZAEZFgJocTAgFw
  0xNTA1MDExMzI4NThaGA8yMTE1MDQwNzEzMjg1OFowQDEVMBMGA1UEAwwMMTAtZWVfdXNlcl8xMRM
@@ -175,17 +175,17 @@ userCertificate;binary:: MIIC+DCCAeACAQUwDQYJKoZIhvcNAQEEBQAwQjEXMBUGA1UEAwwOM
  LWtG6aEn4sIl16ro/spdVpGJk29hNIP5c/Nxtjm07hC+Fkww9SfZ0BPQObMWsxg2EEYHIgQJlb1VE
  HdHeglYV3b5uA41vQjJ/os12S0fvfh9EK5ZWYlY6Bs=
 
-dn: cn=pam_openssh_x509_test_server,ou=groups,dc=ssh,dc=hq
+dn: cn=pox509-test-server,ou=groups,dc=ssh,dc=hq
 objectClass: top
 objectClass: groupOfNames
-cn: pam_openssh_x509_test_server
-description: pam_openssh_x509_test_server
+cn: pox509-test-server
+description: pox509-test-server
 member: uid=__LAST_MAN_STANDING__
-member: uid=pam_openssh_x509_test_user,ou=people,dc=ssh,dc=hq
+member: uid=pox509-test-user,ou=people,dc=ssh,dc=hq
 
-$ ldapsearch -LLL -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -b ou=people,dc=ssh,dc=hq uid=pam_openssh_x509_test_user memberOf
-dn: uid=pam_openssh_x509_test_user,ou=people,dc=ssh,dc=hq
-memberOf: cn=pam_openssh_x509_test_server,ou=groups,dc=ssh,dc=hq
+$ ldapsearch -LLL -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -b ou=people,dc=ssh,dc=hq uid=pox509-test-user memberOf
+dn: uid=pox509-test-user,ou=people,dc=ssh,dc=hq
+memberOf: cn=pox509-test-server,ou=groups,dc=ssh,dc=hq
 
 pam_openssh_x509
 ----------------
