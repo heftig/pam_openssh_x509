@@ -17,14 +17,19 @@ Introduction
 ------------
 
 This file describes how to setup an environment from scratch to get familiar with
-pam_openssh_x509. Note that in a productive environment some steps would be done
-automatically like the creation and distribution of x509 certificates. Also some
-components like the LDAP server, logging facility or SSH client doesnt need to be
-the same implementations as used here. For a fast setup The 'samples' directory
-included in the release holds configurations needed for the installation steps.
-Make sure that when copying setup instructions below the path are relative to the
-root directory of the release. All steps have been tested on a Raspberry PI running
-Arch Linux. Pathes might be wrong for other distributions.
+pam_openssh_x509.
+
+Note that in a production environment some steps would be done automatically.
+Examples are the creation and distribution of x509 certificates. In addition,
+components like the LDAP server, the logging facility and the SSH client are
+exchangeable and don't need to be the the same implementations as used here.
+
+For a quick setup the 'samples' directory included with the package holds
+configurations needed for the installation steps.
+
+When copying setup instructions below, make sure that the paths are relative to
+the root directory of the package. All steps have been tested on a Raspberry PI
+running Arch Linux. Paths might have to be adjusted for other distributions.
 
 
 Solution stack
@@ -45,201 +50,200 @@ Solution stack
 Prerequisites
 -------------
 
-Make sure there is a local user 'pox509-test-user'
+Make sure there is a local user 'pox509-test-user'.
 
 
 syslog-ng
 ---------
 
-1) Install syslog-ng
+1) Install syslog-ng.
 
-2) Create directories for log files
-$ mkdir /var/log/ssh
-$ mkdir /var/log/slapd
+2) Create directories for log files:
+   $ mkdir /var/log/ssh
+   $ mkdir /var/log/slapd
 
-3) Copy config
-$ cp samples/syslog-ng.conf /etc/syslog-ng/
+3) Copy config:
+   $ cp samples/syslog-ng.conf /etc/syslog-ng/
 
 
 OpenSSH
 -------
 
-1) Install OpenSSH with PAM support
+1) Install OpenSSH with PAM support.
 
 2) We are running a second instance of OpenSSH here in order to fall back
-to the standard one without pam_openssh_x509 support. Configuration goes
-to a new directory
-$ mkdir /usr/local/etc/ssh
+   to the standard one without pam_openssh_x509 support. Configuration goes
+   into a new directory:
+   $ mkdir /usr/local/etc/ssh
 
-3) Copy sshd_config
-$ cp samples/sshd_config /usr/local/etc/ssh/
+3) Copy sshd_config:
+   $ cp samples/sshd_config /usr/local/etc/ssh/
 
-4) Create directory for users public keys
-$ mkdir /usr/local/etc/ssh/keystore
+4) Create directory for users public keys:
+   $ mkdir /usr/local/etc/ssh/keystore
 
-In this directory every user gets a subdirectory named after his uid and
-the authorized_keys file will be stored there
+   In this directory every user gets a subdirectory named after their UID. The
+   authorized_keys file will be stored there.
 
-5) Create keystore for 'pox509-test-user'
-$ mkdir /usr/local/etc/ssh/keystore/pox509-test-user
+5) Create keystore for 'pox509-test-user':
+   $ mkdir /usr/local/etc/ssh/keystore/pox509-test-user
 
-/!\ As the authorized_keys file will be managed by pam_openssh_x509 we have
-to make sure that noone expect root can change the authorized_keys file.
-Standard permissions (755) with ownership root:root should be fine.
+   /!\ As the authorized_keys file will be managed by pam_openssh_x509, we have
+   to make sure that noone besides root can change the authorized_keys file.
+   Standard permissions (755) with ownership root:root should be fine.
 
-7) Run OpenSSH
-$ /usr/bin/sshd -f /usr/local/etc/ssh/sshd_config
+7) Run OpenSSH:
+   $ /usr/bin/sshd -f /usr/local/etc/ssh/sshd_config
 
 8) (optional) Make sure PAM support is disabled for other OpenSSH instances
-running on the same machine as they would use the modules as well
+   running on the same machine, as they would use the modules as well.
 
 
 OpenLDAP
 --------
 
-1) Install OpenLDAP
+1) Install OpenLDAP.
 
 2) Perform the following steps:
-$ rm -f /etc/openldap/slapd.conf
-$ mkdir '/var/lib/openldap/dc=ssh,dc=hq'
-$ mv /var/lib/openldap/openldap-data/DB_CONFIG.example /var/lib/openldap/dc\=ssh\,dc\=hq/DB_CONFIG
-$ rm -rf /var/lib/openldap/openldap-data/
-$ mkdir /run/openldap
+   $ rm -f /etc/openldap/slapd.conf
+   $ mkdir '/var/lib/openldap/dc=ssh,dc=hq'
+   $ mv /var/lib/openldap/openldap-data/DB_CONFIG.example \
+     /var/lib/openldap/dc\=ssh\,dc\=hq/DB_CONFIG
+   $ rm -rf /var/lib/openldap/openldap-data/
+   $ mkdir /run/openldap
 
-3) Create new suffix
-$ slapadd -l samples/slapd.ldif -F /etc/openldap/slapd.d/ -n0 
+3) Create new suffix:
+   $ slapadd -l samples/slapd.ldif -F /etc/openldap/slapd.d/ -n0 
 
-4) Start OpenLDAP server
-$ /usr/bin/slapd
+4) Start OpenLDAP server:
+   $ /usr/bin/slapd
 
-5) Create initial directory structure
-$ ldapadd -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -f samples/pam_openssh_x509_test_initial.ldif
+5) Create initial directory structure:
+   $ ldapadd -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq \
+     -w test123 -f samples/pam_openssh_x509_test_initial.ldif
 
-DIT layout:
-dn: dc=ssh,dc=hq
-dn: ou=groups,dc=ssh,dc=hq
-dn: ou=people,dc=ssh,dc=hq
+   DIT layout:
+     dn: dc=ssh,dc=hq
+     dn: ou=groups,dc=ssh,dc=hq
+     dn: ou=people,dc=ssh,dc=hq
 
-The groups tree will hold objects that represent the OpenSSH servers whereas the person
-tree holds the person objects including their x509 certificates.
+   The groups tree will hold objects that represent the OpenSSH servers
+   whereas the person tree holds the person objects including their x509
+   certificates.
 
-6) Add user 'pox509-test-user' with x509 certificate to person tree
-$ ldapadd -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -f samples/pam_openssh_x509_test_add_user.ldif
+6) Add user 'pox509-test-user' with x509 certificate to person tree:
+   $ ldapadd -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq \
+     -w test123 -f samples/pam_openssh_x509_test_add_user.ldif
 
-7) Add OpenSSH server with identifier 'pox509-test-server' to groups tree
-$ ldapadd -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -f samples/pam_openssh_x509_test_add_server.ldif
+7) Add OpenSSH server with identifier 'pox509-test-server' to groups tree:
+   $ ldapadd -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq \
+     -w test123 -f samples/pam_openssh_x509_test_add_server.ldif
 
-8) Grant user 'pox509-test-user' access to OpenSSH server with the identifier 'pox509-test-server'
-$ ldapmodify -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -f samples/pam_openssh_x509_test_authorize_user.ldif
+8) Grant user 'pox509-test-user' access to OpenSSH server with the
+   identifier 'pox509-test-server':
+   $ ldapmodify -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq \
+     -w test123 -f samples/pam_openssh_x509_test_authorize_user.ldif
 
-9) Check LDAP content
-$ ldapsearch -LLL -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -b dc=ssh,dc=hq objectclass=*
-dn: dc=ssh,dc=hq
-objectClass: top
-objectClass: dcObject
-objectClass: organization
-dc: ssh
-o: ssh headquarter
+9) Check LDAP content:
+   $ ldapsearch -LLL -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq \
+     -w test123 -b dc=ssh,dc=hq objectclass=*
 
-dn: ou=people,dc=ssh,dc=hq
-objectClass: top
-objectClass: organizationalUnit
-ou: people
+   Expected output:
+     dn: dc=ssh,dc=hq
+     objectClass: top
+     objectClass: dcObject
+     objectClass: organization
+     dc: ssh
+     o: ssh headquarter
 
-dn: ou=groups,dc=ssh,dc=hq
-objectClass: top
-objectClass: organizationalUnit
-ou: groups
+     dn: ou=people,dc=ssh,dc=hq
+     objectClass: top
+     objectClass: organizationalUnit
+     ou: people
 
-dn: uid=pox509-test-user,ou=people,dc=ssh,dc=hq
-objectClass: top
-objectClass: person
-objectClass: organizationalPerson
-objectClass: inetOrgPerson
-uid: pox509-test-user
-givenName: pox509-test-user
-sn: pox509-test-user
-cn: pox509-test-user
-userCertificate;binary:: MIIC+DCCAeACAQUwDQYJKoZIhvcNAQEEBQAwQjEXMBUGA1UEAwwOM
- DEtY2FfaW50X3VzZXIxEzARBgoJkiaJk/IsZAEZFgNzc2gxEjAQBgoJkiaJk/IsZAEZFgJocTAgFw
- 0xNTA1MTcwODQ0NTZaGA8yMTE1MDQyMzA4NDQ1NlowQDEVMBMGA1UEAwwMMTAtZWVfdXNlcl8xMRM
- wEQYKCZImiZPyLGQBGRYDc3NoMRIwEAYKCZImiZPyLGQBGRYCaHEwggEiMA0GCSqGSIb3DQEBAQUA
- A4IBDwAwggEKAoIBAQDdbiCUMuV/cy/iKL9YINdZyxkDW5b+a4iu6Ds7//NgdOOj3vHmbTfk++u0H
- O4MP08Nv7ZYSfCBpPg19EVR5YdElhUBkQ5AKENWyUbcp2leM3JcMImjExAMQfTIjZiGmtZ2hdlV0X
- wuAuQE/Mivgni2nqBRzObhJlkuUTFv5E4JxohuN/jrOKipb1wc21Faq33OnuiizVvFNsKUJ5wgOX/
- K9NcF4TkqMcboEAy8PRCHccasBs6yesLmM9zL6UImkG5ja7ZtCTU8a1kzIrX0uFE2nsST6GHvyIuA
- +aSxDoSj5AOVTX9VWpJStqDilHqhvBqI0ShPrNVI70xhS/3CREtFAgMBAAEwDQYJKoZIhvcNAQEEB
- QADggEBAIxDHBpY7vURPoV7DqpLKwcK69uCNDLdQxFR4vD3tG8L5UNSFL3dyQcXpa9f+0PSalA/89
- P1zscdoW99EUhGcBXfaMsX2xpyrpSX1kdl3sUMLJez4jX+5MdlM5wGk/fWBbh8p0okQIF7iclia6d
- UXqeEM/YEvlBJYThmrjJBmZ+A8e0rHqK6Ti0iH0TCaSQoZKZdB/owqJReJx4zSwBfDyz4Yx6d/8/5
- bVV+bigML5gyoZ8dD1iNMXKM9MLIN97PYptswB9gZazYTytX+3Niab4naMjUT8FWu2FqIgnkgDeTY
- cE++izA4XQMHHpKJaAgMqgmSvELB24GWo25PaXnGV0=
+     dn: ou=groups,dc=ssh,dc=hq
+     objectClass: top
+     objectClass: organizationalUnit
+     ou: groups
+     
+     dn: uid=pox509-test-user,ou=people,dc=ssh,dc=hq
+     objectClass: top
+     objectClass: person
+     objectClass: organizationalPerson
+     objectClass: inetOrgPerson
+     uid: pox509-test-user
+     givenName: pox509-test-user
+     sn: pox509-test-user
+     cn: pox509-test-user
+     userCertificate;binary:: MIIC+...<omitted>   
 
-dn: cn=pox509-test-server,ou=groups,dc=ssh,dc=hq
-objectClass: top
-objectClass: groupOfNames
-cn: pox509-test-server
-description: pox509-test-server
-member: uid=__LAST_MAN_STANDING__
-member: uid=pox509-test-user,ou=people,dc=ssh,dc=hq
+     dn: cn=pox509-test-server,ou=groups,dc=ssh,dc=hq
+     objectClass: top
+     objectClass: groupOfNames
+     cn: pox509-test-server
+     description: pox509-test-server
+     member: uid=__LAST_MAN_STANDING__
+     member: uid=pox509-test-user,ou=people,dc=ssh,dc=hq
 
-$ ldapsearch -LLL -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq -w test123 -b ou=people,dc=ssh,dc=hq uid=pox509-test-user memberOf
-dn: uid=pox509-test-user,ou=people,dc=ssh,dc=hq
-memberOf: cn=pox509-test-server,ou=groups,dc=ssh,dc=hq
+   $ ldapsearch -LLL -h localhost -p 389 -D cn=directory_manager,dc=ssh,dc=hq \
+     -w test123 -b ou=people,dc=ssh,dc=hq uid=pox509-test-user memberOf
+
+   Expected output:
+     dn: uid=pox509-test-user,ou=people,dc=ssh,dc=hq
+     memberOf: cn=pox509-test-server,ou=groups,dc=ssh,dc=hq
 
 pam_openssh_x509
 ----------------
 
-1) Build and install modules
-$ ./configure --libdir=/lib/security --disable-dependency-tracking
-$ make
-$ make check
-$ su
-$ make install
+1) Build and install modules:
+   $ ./configure --libdir=/lib/security --disable-dependency-tracking
+   $ make
+   $ make check
+   $ sudo make install
 
-2) Copy pam_openssh_x509 configuration file
-$ cp samples/pam_openssh_x509.conf /usr/local/etc/ssh/
+2) Copy pam_openssh_x509 configuration file:
+   $ cp samples/pam_openssh_x509.conf /usr/local/etc/ssh/
 
-3) Copy PAM configuration
-$ cp -i samples/sshd /etc/pam.d/
+3) Copy PAM configuration:
+   $ cp -i samples/sshd /etc/pam.d/
 
 
 PuTTY-CAC
 ---------
 
-Connect to OpenSSH server using the private key in 10-ee_user_1_key.pem
-(In production use the private key inside the Smartcard for signing)
+Connect to the OpenSSH server using the private key in 10-ee_user_1_key.pem.
+In production, use the private key inside the Smartcard for signing.
 
 
 Trusted CA's store
 ------------------
 
-1) Create directory where trusted CA's shall be kept
-$ mkdir /usr/local/etc/ssh/cacerts
+1) Create directory where trusted CA's shall be kept:
+   $ mkdir /usr/local/etc/ssh/cacerts
 
-2) Copy whole CA trust chain
-$ cp samples/00-ca_root_cert.pem /usr/local/etc/ssh/cacerts
-$ cp samples/01-ca_int_user_cert.pem /usr/local/etc/ssh/cacerts 
+2) Copy whole CA trust chain:
+   $ cp samples/00-ca_root_cert.pem /usr/local/etc/ssh/cacerts
+   $ cp samples/01-ca_int_user_cert.pem /usr/local/etc/ssh/cacerts 
 
-3) Create symlink hashes
-$ c_rehash /usr/local/etc/ssh/cacerts
+3) Create symlink hashes:
+   $ c_rehash /usr/local/etc/ssh/cacerts
 
 
 Overview
 --------
 
 Log files:
-/var/log/ssh/sshd_5580.log
-/var/log/ssh/pam_openssh_x509.log
-/var/log/slapd/slapd.log
+   /var/log/ssh/sshd_5580.log
+   /var/log/ssh/pam_openssh_x509.log
+   /var/log/slapd/slapd.log
 
 Keystore:
-/usr/local/etc/ssh/keystore/
+   /usr/local/etc/ssh/keystore/
 
 Configurations:
-/usr/local/etc/ssh/sshd_config
-/usr/local/etc/ssh/pam_openssh_x509.conf
-/etc/pam.d/sshd
-/etc/syslog-ng/syslog-ng.conf
+   /usr/local/etc/ssh/sshd_config
+   /usr/local/etc/ssh/pam_openssh_x509.conf
+   /etc/pam.d/sshd
+   /etc/syslog-ng/syslog-ng.conf
 
 #EOF

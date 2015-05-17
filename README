@@ -19,22 +19,22 @@ a fully automated solution for the management of OpenSSH keys.
 
 pam_openssh_x509 enables you to...
 
- * reduce your costs yet improving security by using synergies of already
-   established processes
- * centrally manage access to OpenSSH servers
- * raise the security level of OpenSSH keys to the same as x509 certificates
- * highly protect private keys by using Smartcard technology
- * periodically update key material without manual interaction
- * revoke keys in a standard way
- * gain back control of the key creation process
- * be completeley independent of changes to OpenSSH itself by using a long
-   established and supported standard interface
- * simply implement two factor authentication
- * adopt to different environments by the usage of policies
- * reveal the theft of private keys and making it hard to duplicate them
+ * Reduce your costs yet improving security by using synergies of already
+   established processes.
+ * Centrally manage access to OpenSSH servers.
+ * Raise the security level of OpenSSH keys to the same as x509 certificates.
+ * Highly protect private keys by using Smartcard technology.
+ * Periodically update key material without manual interaction.
+ * Revoke keys in a standard way.
+ * Gain back control of the key creation process.
+ * Be completely independent of changes to OpenSSH itself by using a long
+   established and supported standard interface.
+ * Simply implement two factor authentication.
+ * Adopt to different environments by the usage of policies.
+ * Reveal the theft of private keys and make it hard to duplicate them.
  * KEEP IT SIMPLE \o/
 
-For more information on how to make the most out of pam_openssh_x509 see
+For more information on how to make the most out of pam_openssh_x509 see the
 next section.
 
 
@@ -43,12 +43,12 @@ Operating model
 
 The idea behind pam_openssh_x509 is to make managed x509 certificates accessible
 for OpenSSH public key authentication. Contrary to other approaches the source
-code of OpenSSH remains untouched making it relatively independent from changes
-to OpenSSH. It also supports components usually found in larger enterprises
+code of OpenSSH remains untouched, making it relatively independent from changes
+to OpenSSH. It also supports components usually found in larger enterprises,
 creating an integrated solution for the OpenSSH key management. Therefore it
-prevents the installation and maintenance of a whole new bloated software for
-managing OpenSSH key material yet raising the security level of the keys and
-reducing costs.
+circumvents the installation and maintenance of an extensive software layer for
+managing OpenSSH key material. Yet, it raises the security level of the keys and
+reduces costs.
 
 The operating model consists of the following components:
 
@@ -58,39 +58,44 @@ The operating model consists of the following components:
  * SSH client supporting Smartcards (e.g. PuTTY-CAC) (optional)
  * pam_openssh_x509
 
+
 The tasks of the components can be described as follows:
 
-The PKI is responsible for the management of the lifecycle of x509 certificates
+The PKI...
 
- * create the private key in a secure manner (e.g. make sure that private key
-   will be created on Smartcard using a known key creation procedure)
- * re-key in regular intervals
- * maintain processes for key revocation
- * publish x509 certificates to LDAP server
+ * is responsible for the management of the lifecycle of x509 certificates.
+ * creates the private key in a secure manner. E.g. it makes sure that
+   private keys will be created on the Smartcard using a known key creation
+   procedure.
+ * re-keys in regular intervals.
+ * maintains processes for key revocation.
+ * publishes x509 certificates to the LDAP server.
 
-The LDAP server
+The LDAP server...
 
- * stores all x509 certificates
- * maintains a list of all OpenSSH servers
- * holds access permissions for the OpenSSH servers
+ * stores all x509 certificates.
+ * maintains a list of all OpenSSH servers.
+ * holds access permissions for the OpenSSH servers.
 
-The Smartcard is used for
+The Smartcard...
 
- * the generation and storage of the private key
- * authentication
+ * generates and stores the private key.
+ * is used for authentication.
 
-The SSH client supporting Smartcards will
+The SSH client supporting Smartcards...
 
- * use the private key inside the Smartcard to create the digital signature used
-   for authentication instead of a private key kept inside the filesystem
+ * will use the private key inside the Smartcard to create the digital signature
+   used for authentication instead of a private key kept inside the filesystem
 
 
 For the usage of pam_openssh_x509 the PKI has to store the x509 certificates at
 the user object in the LDAP server. Every OpenSSH server will be represented as
 a group in a distinct tree in the LDAP server. Access permission to an OpenSSH
-server is then granted through a group membership. pam_openssh_x509 makes sure
-that the public key of the x509 certificate is synchronized to the server after
-access permissions have been checked and the certificate has been validated.
+server is then granted through a group membership.
+
+pam_openssh_x509 makes sure that the public key of the x509 certificate is
+synchronized to the server. It does so only after access permissions have been
+checked and the certificate has been validated.
 
 
 Module stack
@@ -100,30 +105,34 @@ pam_openssh_x509 is made up of the following modules:
 
 pam_openssh_x509_base.so
 
- * checks access permissions through LDAP groups
- * validates x509 certificate
- * converts public key to OpenSSH key format
- * creates and updates data transfer object passed to downstream modules with
-   all determined information
+ * checks access permissions through LDAP groups.
+ * validates x509 certificate.
+ * converts the public key to into the OpenSSH key format.
+ * creates and updates the data transfer object passed to downstream modules
+   with all determined information.
 
 pam_openssh_x509_audit.so (optional)
 
- * logs information of data transfer object
+ * logs information from the data transfer object.
 
 pam_openssh_x509_validate.so
 
- * policy that evaluates data transfer object and updates authorized_keys file
+ * keeps the policy that evaluates the data transfer object and updates the
+   authorized_keys file.
 
 
-The base file collects all the information needed to synchronize keys and grant
+The base module collects all the information needed to synchronize keys and grant
 or revoke server access. All data is stored in a data transfer object that is
-made accessible for downstream modules. The audit module is a passive component
-that only logs the content of the data transfer object. The actual modification
-of the authorized_keys file will be performed by the validation module that can
-be different for various environments. For example an expired user certificate
-may not cause any trouble in a testing environment, whereas it would certainly
-gain significance in production. The validation module is the only module that
-has to be adjusted to individual needs.
+made accessible for downstream modules.
+
+The audit module is a passive component that only logs the content of the data
+transfer object.
+
+The validation module performs the actual modification of the authorized_keys
+file. It can be adjusted for differing environments. For example, while an
+expired user certificate may not cause any trouble in a testing environment, it
+would certainly gain significance in production. The validation module is the
+only module that has to be adjusted to individual needs.
 
 
 Installation
@@ -135,20 +144,20 @@ see INSTALL
 Contribute
 ----------
 
-You like the project and wanna join? Feel free to become part of it.
-Every help is highly appreciated! Always searching for:
+You like the project and want to join? Feel free to become part of it.
+Any help is highly appreciated! We're always searching for:
 
  * Developers
- * Code Reviewers
+ * Code reviewers
  * Tester
- * Testing Environments
- * Feature Requests
+ * Testing environments
+ * Feature requests
  * Feedback
- * Web Designers
- * ASCII Art
+ * Web designers
+ * ASCII art
 
 You have other skills that might help improving the project?
-Dont hesitate contacting me!
+Don't hesitate contacting us!
 
 
 Bug report / Feature request
@@ -167,9 +176,9 @@ Contact
 -------
 
 Questions? Suggestions? Just wanna say Hi?
-Reach me over the following channels:
+Reach us over the following channels:
 
-* IRC: #pam_openssh_x509 @freenode /query flix
+* IRC: #pam_openssh_x509 @ freenode  or /query flix
 * E-Mail: seroland86@gmail.com
 * Github: https://github.com/flix-
 
