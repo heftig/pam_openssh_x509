@@ -18,10 +18,13 @@
 #include "pam_openssh_x509_config.h"
 
 #include <errno.h>
-#include <ldap.h>
-#include <sys/types.h>
 #include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+
+#include <ldap.h>
 
 #include "pam_openssh_x509_util.h"
 

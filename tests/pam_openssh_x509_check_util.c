@@ -15,16 +15,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <check.h>
-#include <stdlib.h>
+#include "pam_openssh_x509_check.h"
+
 #include <errno.h>
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <syslog.h>
-#include <ldap.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "pam_openssh_x509_check.h"
+#include <check.h>
+#include <ldap.h>
+#include <syslog.h>
+#include <openssl/evp.h>
+#include <openssl/ossl_typ.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
+
 #include "../src/pam_openssh_x509_util.h"
 
 #define BUFFER_SIZE 2048
@@ -88,6 +94,7 @@ static struct pox509_is_valid_uid_item test_is_valid_uid_lt[] =
     {
         { "pox509-test-user", 1 },
         { "Pox509-test-user", 0 },
+        { "pox509-Test-user", 0 },
         { "pox509_test-user", 0 },
         { "1pox509", 0 },
         { "abcdefghijklmnopqrstuvwxyzaabbcc", 1 },

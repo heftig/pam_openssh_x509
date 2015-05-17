@@ -18,9 +18,10 @@
 #ifndef PAM_OPENSSH_X509_UTIL_H
 #define PAM_OPENSSH_X509_UTIL_H
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/stat.h>
+#include <stddef.h>
+
+#include <openssl/evp.h>
+#include <openssl/ossl_typ.h>
 #include <openssl/x509.h>
 
 #include "pam_openssh_x509.h"

@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>

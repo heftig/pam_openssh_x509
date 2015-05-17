@@ -17,14 +17,26 @@
 
 #include "pam_openssh_x509_util.h"
 
-#include <syslog.h>
-#include <ldap.h>
-#include <strings.h>
 #include <errno.h>
-#include <string.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/stat.h>
+
+#include <ldap.h>
 #include <regex.h>
+#include <syslog.h>
+#include <openssl/bio.h>
+#include <openssl/bn.h>
+#include <openssl/evp.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#include <openssl/x509_vfy.h>
 
 struct pox509_config_lt_item {
     char *name;

@@ -53,7 +53,6 @@ struct pox509_is_valid_uid_item {
 };
 
 /* function declarations */
-Suite *make_base_suite(void);
 Suite *make_config_suite(void);
 Suite *make_util_suite(void);
 #endif

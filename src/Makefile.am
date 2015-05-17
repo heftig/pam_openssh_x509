@@ -5,8 +5,10 @@ include_HEADERS = pam_openssh_x509.h
 
 pam_openssh_x509_base_la_SOURCES = pam_openssh_x509_base.c \
                                    pam_openssh_x509_config.c \
+                                   pam_openssh_x509_ldap.c \
                                    pam_openssh_x509_util.c \
                                    pam_openssh_x509_config.h \
+                                   pam_openssh_x509_ldap.h \
                                    pam_openssh_x509_util.h
 pam_openssh_x509_base_la_LDFLAGS = -avoid-version -module -export-dynamic -shared
 pam_openssh_x509_base_la_LIBADD = ${LIBADD_BASE}

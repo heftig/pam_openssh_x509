@@ -15,12 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <check.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <stdarg.h>
-
 #include "pam_openssh_x509_check.h"
+
+#include <errno.h>
+#include <stdarg.h>
+#include <stdlib.h>
+
+#include <check.h>
+#include <confuse.h>
 
 #include "../src/pam_openssh_x509_config.c"
 

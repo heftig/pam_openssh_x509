@@ -15,16 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
-#include <check.h>
-
 #include "pam_openssh_x509_check.h"
+
+#include <stdlib.h>
+
+#include <check.h>
 
 int
 main(int argc, char **argv)
 {
     SRunner *sr = srunner_create(NULL);
-    srunner_add_suite(sr, make_base_suite());
     srunner_add_suite(sr, make_config_suite());
     srunner_add_suite(sr, make_util_suite());
 

@@ -18,8 +18,6 @@
 #ifndef PAM_OPENSSH_X509_H
 #define PAM_OPENSSH_X509_H
 
-#include <stdlib.h>
-
 /* type declarations */
 struct pam_openssh_x509_info {
     char *uid;
