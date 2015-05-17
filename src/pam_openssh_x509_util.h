@@ -30,10 +30,10 @@
 enum pox509_sections { SYSLOG, LIBLDAP };
 
 /* function declarations */
-int is_readable_file(const char *file);
-int is_valid_uid(const char *uid);
 long int config_lookup(const enum pox509_sections sec, const char *key);
 void init_data_transfer_object(struct pam_openssh_x509_info *x509_info);
+int is_readable_file(const char *file);
+int is_valid_uid(const char *uid);
 void substitute_token(char token, char *subst, char *src, char *dst, size_t dst_length);
 void create_ldap_search_filter(char *rdn, char *uid, char *dst, size_t dst_length);
 void check_access_permission(char *group_dn, char *identifier, struct pam_openssh_x509_info *x509_info);

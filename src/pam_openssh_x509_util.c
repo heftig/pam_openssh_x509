@@ -121,14 +121,52 @@ ret_no_value:
     return -EINVAL;
 }
 
-static long int log_facility = DEFAULT_LOG_FACILITY;
+static long int pox509_log_facility = DEFAULT_LOG_FACILITY;
+
+int
+set_log_facility(const char *log_facility)
+{
+    if (log_facility == NULL) {
+        FATAL("set_log_facility(): log_facility == NULL");
+    }
+
+    long int value = config_lookup(SYSLOG, log_facility);
+    if (value == -EINVAL) {
+        return -EINVAL;
+    }
+
+    pox509_log_facility = value;
+    return 0;
+}
+
+void
+init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
+{
+    if (x509_info == NULL) {
+        FATAL("init_data_transfer_object(): x509_info == NULL");
+    }
+
+    memset(x509_info, 0, sizeof *x509_info);
+    x509_info->uid = NULL;
+    x509_info->authorized_keys_file = NULL;
+    x509_info->ssh_keytype = NULL;
+    x509_info->ssh_key = NULL;
+    x509_info->has_cert = 0x56;
+    x509_info->has_valid_cert = 0x56;
+    x509_info->serial = NULL;
+    x509_info->issuer = NULL;
+    x509_info->subject = NULL;
+    x509_info->directory_online = 0x56;
+    x509_info->has_access = 0x56;
+    x509_info->log_facility = NULL;
+}
 
 static void
 LOG(char *prefix, const char *fmt, va_list ap)
 {
     char buffer[LOG_BUFFER_SIZE];
     vsnprintf(buffer, LOG_BUFFER_SIZE, fmt, ap);
-    syslog(log_facility, "%s %s\n", prefix, buffer);
+    syslog(pox509_log_facility, "%s %s\n", prefix, buffer);
 }
 
 void
@@ -166,22 +204,6 @@ FATAL(const char *fmt, ...)
     LOG("[!]", fmt, ap);
     va_end(ap);
     exit(EXIT_FAILURE);
-}
-
-int
-set_log_facility(const char *lf_in)
-{
-    if (lf_in == NULL) {
-        FATAL("set_log_facility(): lf_in == NULL");
-    }
-
-    long int value = config_lookup(SYSLOG, lf_in);
-    if (value == -EINVAL) {
-        return -EINVAL;
-    }
-
-    log_facility = value;
-    return 0;
 }
 
 int
@@ -245,28 +267,6 @@ is_msb_set(unsigned char byte)
     } else {
         return 0;
     }
-}
-
-void
-init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
-{
-    if (x509_info == NULL) {
-        FATAL("init_data_transfer_object(): x509_info == NULL");
-    }
-
-    memset(x509_info, 0, sizeof *x509_info);
-    x509_info->uid = NULL;
-    x509_info->authorized_keys_file = NULL;
-    x509_info->ssh_keytype = NULL;
-    x509_info->ssh_key = NULL;
-    x509_info->has_cert = 0x56;
-    x509_info->has_valid_cert = 0x56;
-    x509_info->serial = NULL;
-    x509_info->issuer = NULL;
-    x509_info->subject = NULL;
-    x509_info->directory_online = 0x56;
-    x509_info->has_access = 0x56;
-    x509_info->log_facility = NULL;
 }
 
 /*
