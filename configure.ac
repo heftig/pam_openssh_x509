@@ -2,7 +2,7 @@
 AC_PREREQ([2.69])
 AC_INIT([pam_openssh_x509], [0.1.0], [seroland86@gmail.com], [], [https://github.com/flix-/pam_openssh_x509])
 AC_LANG([C])
-AC_CONFIG_SRCDIR([src/pam_openssh_x509.h])
+AC_CONFIG_SRCDIR([src/pam_openssh_x509_util.h])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([gnu subdir-objects -Wall -Werror])

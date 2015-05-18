@@ -23,7 +23,7 @@
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>
 
-#include "pam_openssh_x509.h"
+#include "pam_openssh_x509_util.h"
 
 static int 
 authorized(struct pam_openssh_x509_info *x509_info)

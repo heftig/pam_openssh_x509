@@ -47,7 +47,7 @@ struct pox509_test_validate_x509_item {
     char exp_result;
 };
 
-struct pox509_is_valid_uid_item {
+struct pox509_test_is_valid_uid_item {
     char *uid;
     char exp_result;
 };

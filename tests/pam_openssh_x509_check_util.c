@@ -90,7 +90,7 @@ static struct pox509_test_validate_x509_item test_validate_x509_lt[] =
         { X509CERTSDIR "/trusted_and_not_expired.pem", 1 },
     };
 
-static struct pox509_is_valid_uid_item test_is_valid_uid_lt[] =
+static struct pox509_test_is_valid_uid_item test_is_valid_uid_lt[] =
     {
         { "pox509-test-user", 1 },
         { "Pox509-test-user", 0 },

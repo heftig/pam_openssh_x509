@@ -21,7 +21,7 @@
 #include <confuse.h>
 #include <openssl/x509.h>
 
-#include "pam_openssh_x509.h"
+#include "pam_openssh_x509_util.h"
 
 /* type declarations */
 

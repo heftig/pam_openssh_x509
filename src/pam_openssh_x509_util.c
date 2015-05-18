@@ -98,68 +98,7 @@ static struct pox509_config_lt_item libldap[] =
     };
 
 static struct pox509_config_lt_item *config_lt[] = { syslog_facilities, libldap };
-
-long int
-config_lookup(const enum pox509_sections sec, const char *key)
-{
-    if (key == NULL) {
-        FATAL("config_lookup(): key == NULL");
-    }
-
-    if (sec != SYSLOG && sec != LIBLDAP) {
-        goto ret_no_value;
-    }
-
-    struct pox509_config_lt_item *lookup_ptr = NULL;
-    for (lookup_ptr = config_lt[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
-        if (strcasecmp(lookup_ptr->name, key) == 0) {
-            return lookup_ptr->value;
-        }
-    }
-
-ret_no_value:
-    return -EINVAL;
-}
-
 static long int pox509_log_facility = DEFAULT_LOG_FACILITY;
-
-int
-set_log_facility(const char *log_facility)
-{
-    if (log_facility == NULL) {
-        FATAL("set_log_facility(): log_facility == NULL");
-    }
-
-    long int value = config_lookup(SYSLOG, log_facility);
-    if (value == -EINVAL) {
-        return -EINVAL;
-    }
-
-    pox509_log_facility = value;
-    return 0;
-}
-
-void
-init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
-{
-    if (x509_info == NULL) {
-        FATAL("init_data_transfer_object(): x509_info == NULL");
-    }
-
-    memset(x509_info, 0, sizeof *x509_info);
-    x509_info->uid = NULL;
-    x509_info->authorized_keys_file = NULL;
-    x509_info->ssh_keytype = NULL;
-    x509_info->ssh_key = NULL;
-    x509_info->has_cert = 0x56;
-    x509_info->has_valid_cert = 0x56;
-    x509_info->serial = NULL;
-    x509_info->issuer = NULL;
-    x509_info->subject = NULL;
-    x509_info->directory_online = 0x56;
-    x509_info->has_access = 0x56;
-    x509_info->log_facility = NULL;
-}
 
 static void
 LOG(char *prefix, const char *fmt, va_list ap)
@@ -204,6 +143,67 @@ FATAL(const char *fmt, ...)
     LOG("[!]", fmt, ap);
     va_end(ap);
     exit(EXIT_FAILURE);
+}
+
+long int
+config_lookup(const enum pox509_sections sec, const char *key)
+{
+    if (key == NULL) {
+        FATAL("config_lookup(): key == NULL");
+    }
+
+    if (sec != SYSLOG && sec != LIBLDAP) {
+        goto ret_no_value;
+    }
+
+    struct pox509_config_lt_item *lookup_ptr = NULL;
+    for (lookup_ptr = config_lt[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
+        if (strcasecmp(lookup_ptr->name, key) == 0) {
+            return lookup_ptr->value;
+        }
+    }
+
+ret_no_value:
+    return -EINVAL;
+}
+
+
+int
+set_log_facility(const char *log_facility)
+{
+    if (log_facility == NULL) {
+        FATAL("set_log_facility(): log_facility == NULL");
+    }
+
+    long int value = config_lookup(SYSLOG, log_facility);
+    if (value == -EINVAL) {
+        return -EINVAL;
+    }
+
+    pox509_log_facility = value;
+    return 0;
+}
+
+void
+init_data_transfer_object(struct pam_openssh_x509_info *x509_info)
+{
+    if (x509_info == NULL) {
+        FATAL("init_data_transfer_object(): x509_info == NULL");
+    }
+
+    memset(x509_info, 0, sizeof *x509_info);
+    x509_info->uid = NULL;
+    x509_info->authorized_keys_file = NULL;
+    x509_info->ssh_keytype = NULL;
+    x509_info->ssh_key = NULL;
+    x509_info->has_cert = 0x56;
+    x509_info->has_valid_cert = 0x56;
+    x509_info->serial = NULL;
+    x509_info->issuer = NULL;
+    x509_info->subject = NULL;
+    x509_info->directory_online = 0x56;
+    x509_info->has_access = 0x56;
+    x509_info->log_facility = NULL;
 }
 
 int
