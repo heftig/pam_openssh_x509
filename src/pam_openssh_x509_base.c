@@ -31,8 +31,8 @@
 #include "pam_openssh_x509_ldap.h"
 #include "pam_openssh_x509_util.h"
 
-#define MAX_UID_LENGTH                      32
-#define AUTHORIZED_KEYS_FILE_BUFFER_SIZE    1024
+#define MAX_UID_LENGTH 32
+#define AUTHORIZED_KEYS_FILE_BUFFER_SIZE 1024
 
 static void
 cleanup_x509_info(pam_handle_t *pamh, void *data, int error_status)
