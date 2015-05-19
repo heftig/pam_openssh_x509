@@ -41,14 +41,14 @@ next section.
 Operating model
 ---------------
 
-The idea behind pam_openssh_x509 is to make managed x509 certificates accessible
-for OpenSSH public key authentication. Contrary to other approaches the source
-code of OpenSSH remains untouched, making it relatively independent from changes
-to OpenSSH. It also supports components usually found in larger enterprises,
-creating an integrated solution for the OpenSSH key management. Therefore it
-circumvents the installation and maintenance of an extensive software layer for
-managing OpenSSH key material. Yet, it raises the security level of the keys and
-reduces costs.
+The idea behind pam_openssh_x509 is to make managed x509 certificates
+accessible for OpenSSH public key authentication. Contrary to other approaches
+the source code of OpenSSH remains untouched, making it relatively independent
+from changes to OpenSSH. It also supports components usually found in larger
+enterprises, creating an integrated solution for the OpenSSH key management.
+Therefore it circumvents the installation and maintenance of an extensive
+software layer for managing OpenSSH key material. Yet, it raises the security
+level of the keys and reduces costs.
 
 The operating model consists of the following components:
 
@@ -63,29 +63,30 @@ The tasks of the components can be described as follows:
 
 The PKI...
 
- * is responsible for the management of the lifecycle of x509 certificates.
- * creates the private key in a secure manner. E.g. it makes sure that
+ * Is responsible for the management of the lifecycle of x509 certificates.
+ * Creates the private key in a secure manner. E.g. it makes sure that
    private keys will be created on the Smartcard using a known key creation
    procedure.
- * re-keys in regular intervals.
- * maintains processes for key revocation.
- * publishes x509 certificates to the LDAP server.
+ * Re-keys in regular intervals.
+ * Maintains processes for key revocation.
+ * Publishes x509 certificates to the LDAP server.
 
 The LDAP server...
 
- * stores all x509 certificates.
- * maintains a list of all OpenSSH servers.
- * holds access permissions for the OpenSSH servers.
+ * Stores all x509 certificates.
+ * Maintains a list of all OpenSSH servers.
+ * Holds access permissions for the OpenSSH servers.
 
 The Smartcard...
 
- * generates and stores the private key.
- * is used for authentication.
+ * Generates and stores the private key.
+ * Is used for authentication.
 
 The SSH client supporting Smartcards...
 
- * will use the private key inside the Smartcard to create the digital signature
-   used for authentication instead of a private key kept inside the filesystem
+ * Will use the private key inside the Smartcard to create the digital
+   signature used for authentication instead of a private key kept inside the
+   filesystem
 
 
 For the usage of pam_openssh_x509 the PKI has to store the x509 certificates at
@@ -105,25 +106,25 @@ pam_openssh_x509 is made up of the following modules:
 
 pam_openssh_x509_base.so
 
- * checks access permissions through LDAP groups.
- * validates x509 certificate.
- * converts the public key to into the OpenSSH key format.
- * creates and updates the data transfer object passed to downstream modules
+ * Checks access permissions through LDAP groups.
+ * Validates x509 certificate.
+ * Converts the public key to into the OpenSSH key format.
+ * Creates and updates the data transfer object passed to downstream modules
    with all determined information.
 
 pam_openssh_x509_audit.so (optional)
 
- * logs information from the data transfer object.
+ * Logs information from the data transfer object.
 
 pam_openssh_x509_validate.so
 
- * keeps the policy that evaluates the data transfer object and updates the
+ * Keeps the policy that evaluates the data transfer object and updates the
    authorized_keys file.
 
 
-The base module collects all the information needed to synchronize keys and grant
-or revoke server access. All data is stored in a data transfer object that is
-made accessible for downstream modules.
+The base module collects all the information needed to synchronize keys and
+grant or revoke server access. All data is stored in a data transfer object
+that is made accessible for downstream modules.
 
 The audit module is a passive component that only logs the content of the data
 transfer object.

@@ -16,8 +16,8 @@ Contents of this file
 Introduction
 ------------
 
-This file describes how to setup an environment from scratch to get familiar with
-pam_openssh_x509.
+This file describes how to setup an environment from scratch to get familiar
+with pam_openssh_x509.
 
 Note that in a production environment some steps would be done automatically.
 Examples are the creation and distribution of x509 certificates. In addition,
