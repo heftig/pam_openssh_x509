@@ -158,7 +158,8 @@ config_lookup(const enum pox509_sections sec, const char *key)
 
     struct pox509_config_lt_item *lookup_ptr = NULL;
     for (lookup_ptr = config_lt[sec]; lookup_ptr->name != NULL; lookup_ptr++) {
-        if (strcasecmp(lookup_ptr->name, key) == 0) {
+        int rc = strcasecmp(lookup_ptr->name, key);
+        if (rc == 0) {
             return lookup_ptr->value;
         }
     }
@@ -366,7 +367,8 @@ check_access_permission(char *group_dn, char *identifier, struct pam_openssh_x50
         goto no_access;
     }
     /* token now contains rdn value of group only */
-    if (strcmp(token, identifier) != 0) {
+    int rc = strcmp(token, identifier);
+    if (rc != 0) {
         goto no_access;
     }
     x509_info->has_access = 1;
